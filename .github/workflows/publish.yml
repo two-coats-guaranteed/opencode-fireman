@@ -1,56 +1,56 @@
-name: publish
-
-# Triggers on tags like v0.1.0, v0.2.0, etc.
-# Requires NPM_TOKEN secret to be set in the repo settings.
-# Provenance attestation requires id-token write permission.
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install
-        run: bun install --frozen-lockfile=false
-
-      - name: Verify version matches tag
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME#v}"
-          PKG=$(node -p "require('./package.json').version")
-          if [ "$TAG" != "$PKG" ]; then
-            echo "tag $GITHUB_REF_NAME does not match package.json version $PKG"
-            exit 1
-          fi
-          echo "version $PKG matches tag $GITHUB_REF_NAME"
-
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Fireman-Bench
-        run: bun run bench
-
-      - name: Build
-        run: bun run build
-
-      - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#name: publish
+#
+## Triggers on tags like v0.1.0, v0.2.0, etc.
+## Requires NPM_TOKEN secret to be set in the repo settings.
+## Provenance attestation requires id-token write permission.
+#
+#on:
+#  push:
+#    tags:
+#      - 'v*'
+#
+#jobs:
+#  publish:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: oven-sh/setup-bun@v2
+#        with:
+#          bun-version: latest
+#
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: '22'
+#          registry-url: 'https://registry.npmjs.org'
+#
+#      - name: Install
+#        run: bun install --frozen-lockfile=false
+#
+#      - name: Verify version matches tag
+#        run: |
+#          set -euo pipefail
+#          TAG="${GITHUB_REF_NAME#v}"
+#          PKG=$(node -p "require('./package.json').version")
+#          if [ "$TAG" != "$PKG" ]; then
+#            echo "tag $GITHUB_REF_NAME does not match package.json version $PKG"
+#            exit 1
+#          fi
+#          echo "version $PKG matches tag $GITHUB_REF_NAME"
+#
+#      - name: Typecheck
+#        run: bun run typecheck
+#
+#      - name: Fireman-Bench
+#        run: bun run bench
+#
+#      - name: Build
+#        run: bun run build
+#
+#      - name: Publish to npm
+#        run: npm publish --provenance --access public
+#        env:
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
