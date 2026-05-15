@@ -16,7 +16,7 @@ jobs:
           bun-version: latest
 
       - name: Install dev deps
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Typecheck
         run: bun run typecheck
@@ -30,40 +30,22 @@ jobs:
       - name: Verify dist/ shape
         run: |
           set -euo pipefail
-          test -f dist/index.js || (echo "missing dist/index.js" && exit 1)
-          test -f dist/index.d.ts || (echo "missing dist/index.d.ts" && exit 1)
-          test -f dist/detector.js || (echo "missing dist/detector.js" && exit 1)
-          test -f dist/detector.d.ts || (echo "missing dist/detector.d.ts" && exit 1)
-          test -f dist/types.js || (echo "missing dist/types.js" && exit 1)
-          test -f dist/types.d.ts || (echo "missing dist/types.d.ts" && exit 1)
+          for f in dist/index.js dist/index.d.ts dist/detector.js dist/detector.d.ts dist/types.js dist/types.d.ts; do
+            test -f "$f" || (echo "missing $f" && exit 1)
+          done
           echo "dist/ shape OK"
           ls -la dist/
 
       - name: Smoke-test the built detector
-        run: |
-          set -euo pipefail
-          # Run the bench against the BUILT detector to confirm the emit is valid.
-          # Uses a temporary harness that imports from dist/ instead of src/.
-          cat > /tmp/smoke.mjs <<'EOF'
-          import { analyze } from "./dist/detector.js";
-          const findings = analyze("bench/traps/T001-serializer-key-ordering/audit-serializer.ts");
-          if (findings.length !== 1) {
-            console.error("expected 1 finding, got", findings.length, findings);
-            process.exit(1);
-          }
-          if (findings[0].category !== "sibling-divergence") {
-            console.error("wrong category:", findings[0].category);
-            process.exit(1);
-          }
-          console.log("built detector OK:", findings[0]);
-          EOF
-          node /tmp/smoke.mjs
+        run: bun run smoke
 
-      - name: Verify pack contents
+      - name: Consumer-install test (verifies the published tarball is importable)
+        run: bun run consumer-test
+
+      - name: Show pack contents
         run: |
           set -euo pipefail
-          npm pack
-          ls -la *.tgz
+          ls -la opencode-fireman-*.tgz
           echo "--- pack contents ---"
           tar -tzf opencode-fireman-*.tgz | sort
           echo "--- pack size ---"

@@ -30,10 +30,11 @@
     "build": "bun run clean && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "bench": "bun bench/harness/run.ts",
-    "bench:node": "node --experimental-strip-types --no-warnings bench/harness/run.ts",
-    "test": "bun run bench",
+    "smoke": "bun scripts/smoke.mjs",
+    "consumer-test": "bash scripts/consumer-test.sh",
+    "test": "bun run typecheck && bun run bench",
     "pack:check": "bun run build && bun pm pack --dry-run",
-    "prepublishOnly": "bun run build && bun run test"
+    "prepublishOnly": "bun run typecheck && bun run bench && bun run build && bun run smoke"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "*"
@@ -49,7 +50,6 @@
     "typescript": "^5.7.0"
   },
   "engines": {
-    "node": ">=22.6.0",
     "bun": ">=1.1.0"
   },
   "keywords": [

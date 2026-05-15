@@ -28,7 +28,7 @@
 #          registry-url: 'https://registry.npmjs.org'
 #
 #      - name: Install
-#        run: bun install --frozen-lockfile=false
+#        run: bun install --frozen-lockfile
 #
 #      - name: Verify version matches tag
 #        run: |
