@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dev deps
+        run: bun install --frozen-lockfile=false
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Fireman-Bench (gates G5 and G6)
+        run: bun run bench
+
+      - name: Build dist/
+        run: bun run build
+
+      - name: Verify dist/ shape
+        run: |
+          set -euo pipefail
+          test -f dist/index.js || (echo "missing dist/index.js" && exit 1)
+          test -f dist/index.d.ts || (echo "missing dist/index.d.ts" && exit 1)
+          test -f dist/detector.js || (echo "missing dist/detector.js" && exit 1)
+          test -f dist/detector.d.ts || (echo "missing dist/detector.d.ts" && exit 1)
+          test -f dist/types.js || (echo "missing dist/types.js" && exit 1)
+          test -f dist/types.d.ts || (echo "missing dist/types.d.ts" && exit 1)
+          echo "dist/ shape OK"
+          ls -la dist/
+
+      - name: Smoke-test the built detector
+        run: |
+          set -euo pipefail
+          # Run the bench against the BUILT detector to confirm the emit is valid.
+          # Uses a temporary harness that imports from dist/ instead of src/.
+          cat > /tmp/smoke.mjs <<'EOF'
+          import { analyze } from "./dist/detector.js";
+          const findings = analyze("bench/traps/T001-serializer-key-ordering/audit-serializer.ts");
+          if (findings.length !== 1) {
+            console.error("expected 1 finding, got", findings.length, findings);
+            process.exit(1);
+          }
+          if (findings[0].category !== "sibling-divergence") {
+            console.error("wrong category:", findings[0].category);
+            process.exit(1);
+          }
+          console.log("built detector OK:", findings[0]);
+          EOF
+          node /tmp/smoke.mjs
+
+      - name: Verify pack contents
+        run: |
+          set -euo pipefail
+          npm pack
+          ls -la *.tgz
+          echo "--- pack contents ---"
+          tar -tzf opencode-fireman-*.tgz | sort
+          echo "--- pack size ---"
+          du -h opencode-fireman-*.tgz

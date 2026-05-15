@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fireman Truth File",
+  "description": "Ground-truth labels for a single Fireman-Bench case.",
+  "type": "object",
+  "required": ["case_id", "description", "is_control", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^(T|C)[0-9]{3}$",
+      "description": "T### for traps, C### for controls. Numbering is dense and never recycled."
+    },
+    "description": {
+      "type": "string",
+      "description": "One-line human summary of what this case is testing."
+    },
+    "category": {
+      "type": ["string", "null"],
+      "enum": [
+        "sibling-divergence",
+        "manual-escaping",
+        "compatibility-marker",
+        "timestamp-truncation",
+        "bitmask-density",
+        "retry-asymmetry",
+        null
+      ],
+      "description": "Primary trap category. Null for controls."
+    },
+    "inspired_by": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Real-world libraries, issues, or patterns this case distills. Provenance, not copyright."
+    },
+    "is_control": {
+      "type": "boolean",
+      "description": "True for controls (Fireman should NOT fire). False for traps."
+    },
+    "findings": {
+      "type": "array",
+      "description": "Empty for controls. One or more entries for traps.",
+      "items": {
+        "type": "object",
+        "required": ["file", "start_line", "end_line", "category", "rationale"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Filename within the case directory."
+          },
+          "start_line": { "type": "integer", "minimum": 1 },
+          "end_line": { "type": "integer", "minimum": 1 },
+          "category": { "type": "string" },
+          "severity": { "enum": ["high", "medium", "low"] },
+          "rationale": {
+            "type": "string",
+            "description": "Why this region is a trap. Read by humans, not by the analyzer."
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "is_control": { "const": true } } },
+      "then": { "properties": { "findings": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "is_control": { "const": false } } },
+      "then": { "properties": { "findings": { "minItems": 1 } } }
+    }
+  ]
+}

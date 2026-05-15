@@ -1,0 +1,21 @@
+{
+  "case_id": "T001",
+  "description": "Audit serializer sorts keys for HMAC signature stability; sibling serializers do not.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "npm:json-stable-stringify",
+    "npm:fast-json-stable-stringify",
+    "github:auth0/node-jsonwebtoken#404"
+  ],
+  "is_control": false,
+  "findings": [
+    {
+      "file": "audit-serializer.ts",
+      "start_line": 13,
+      "end_line": 29,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "serializeAudit is structurally near-identical to serializeUser and serializeProduct (same field-pick pattern, same null-coalescing, same conditional branch, same JSON.stringify return) but inserts a deterministic key-sort before stringification. The sort is load-bearing: removing it changes the byte sequence the audit-signer service HMACs, invalidating signatures on every existing audit record. An agent told to deduplicate these three serializers will normalize the audit version onto the unsorted helper unless warned."
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "name": "opencode-fireman",
+  "version": "0.1.0",
+  "description": "Lightweight OpenCode plugin that warns agents about structurally asymmetric code regions before refactoring",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./detector": {
+      "types": "./dist/detector.d.ts",
+      "import": "./dist/detector.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "clean": "rm -rf dist *.tgz",
+    "build": "bun run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "bench": "bun bench/harness/run.ts",
+    "bench:node": "node --experimental-strip-types --no-warnings bench/harness/run.ts",
+    "test": "bun run bench",
+    "pack:check": "bun run build && bun pm pack --dry-run",
+    "prepublishOnly": "bun run build && bun run test"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": "*"
+  },
+  "peerDependenciesMeta": {
+    "@opencode-ai/plugin": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22.6.0",
+    "bun": ">=1.1.0"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "agent",
+    "refactor-safety",
+    "static-analysis"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/opencode-fireman.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

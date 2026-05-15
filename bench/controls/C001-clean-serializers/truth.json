@@ -1,0 +1,10 @@
+{
+  "case_id": "C001",
+  "description": "Three structurally similar serializers with no divergence — Fireman must not fire.",
+  "category": null,
+  "inspired_by": [
+    "Matched control for T001-serializer-key-ordering"
+  ],
+  "is_control": true,
+  "findings": []
+}
