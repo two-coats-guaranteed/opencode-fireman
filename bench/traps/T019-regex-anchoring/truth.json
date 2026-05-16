@@ -1,0 +1,18 @@
+{
+  "case_id": "T019",
+  "description": "FRONTIER: one validator uses a fully-anchored regex to prevent open redirects; siblings use unanchored regexes on trusted tokens. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "regex-anchoring",
+  "inspired_by": ["Open-redirect and validation-bypass bugs from unanchored regex matching"],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "is-valid-redirect.ts",
+      "start_line": 8,
+      "end_line": 10,
+      "category": "regex-anchoring",
+      "severity": "high",
+      "rationale": "isValidRedirect anchors its regex with ^...$ because an unanchored match on a redirect target is an open-redirect hole; isValidSlug and isValidTag validate pre-trimmed internal tokens and can match loosely. Unify them onto an unanchored helper and the redirect check accepts hostile targets. A regex-anchoring detector should flag the divergent anchoring; v0.1 (sort-only) cannot."
+    }
+  ]
+}

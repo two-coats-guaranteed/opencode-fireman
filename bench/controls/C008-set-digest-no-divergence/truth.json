@@ -1,0 +1,9 @@
+{
+  "case_id": "C008",
+  "description": "Three digest functions with no divergence — matched control for T004.",
+  "category": null,
+  "inspired_by": ["Matched control for T004-set-digest-ordering"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

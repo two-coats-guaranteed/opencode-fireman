@@ -1,0 +1,9 @@
+{
+  "case_id": "C015",
+  "description": "Two renderers that both sort — one via .sort(), one via the immutable .toSorted(). Symmetric and innocent; Fireman must not fire.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — .toSorted() is also a sort; siblings using it are symmetric"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "C012",
+  "description": "Two near-identical functions, neither sorts — proves Fireman does not fire on plain duplication, only on divergent sorts.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — ordinary duplication baseline"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

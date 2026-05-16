@@ -1,0 +1,18 @@
+{
+  "case_id": "T018",
+  "description": "FRONTIER: one loader lets errors propagate (a missing auth key must abort startup); siblings swallow errors and default. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "error-handling",
+  "inspired_by": ["Silent-failure incidents from uniform try/catch applied to a fail-loud path"],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "load-auth-key.ts",
+      "start_line": 10,
+      "end_line": 12,
+      "category": "error-handling",
+      "severity": "high",
+      "rationale": "loadAuthKey deliberately omits the try/catch its siblings have: a missing auth key must abort startup, not silently default to an empty string. Unify it onto the error-swallowing helper and the server can boot without an auth key, accepting unauthenticated traffic. An error-handling detector should flag the divergent propagation; v0.1 (sort-only) cannot."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "T009",
+  "description": "FRONTIER: one flag-packer uses a non-contiguous bitmask fixed by a wire protocol; siblings use contiguous internal bits. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "bitmask-density",
+  "inspired_by": [
+    "Wire-protocol flag layouts with reserved/skipped bits"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "pack-wire-flags.ts",
+      "start_line": 8,
+      "end_line": 14,
+      "category": "bitmask-density",
+      "severity": "high",
+      "rationale": "packWireFlags shares the shape of packUiFlags and packCacheFlags but skips bit value 4 (offset 3 is reserved) — the layout is fixed by an external wire protocol. An agent 'tidying' the gap to make the bits contiguous breaks the peer decoder. A bitmask detector should flag the non-contiguous layout plus the marker; v0.1 (sort-only) cannot."
+    }
+  ]
+}

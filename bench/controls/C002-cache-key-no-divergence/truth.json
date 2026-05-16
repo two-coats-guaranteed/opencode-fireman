@@ -1,0 +1,9 @@
+{
+  "case_id": "C002",
+  "description": "Three cache-key builders with no divergence — matched control for T002.",
+  "category": null,
+  "inspired_by": ["Matched control for T002-cache-key-canonicalization"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

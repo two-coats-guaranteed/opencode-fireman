@@ -1,0 +1,9 @@
+{
+  "case_id": "C004",
+  "description": "A lone sorting function with no sibling files — nothing to diverge from, so no finding.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — exercises the no-siblings path"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

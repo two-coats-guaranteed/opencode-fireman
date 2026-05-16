@@ -1,0 +1,9 @@
+{
+  "case_id": "C016",
+  "description": "FRONTIER: a function whose body mentions .sort() only inside a STRING LITERAL. v0.1 strips comments but not strings, so it false-positives. Known residual, fixable, deferred.",
+  "category": null,
+  "inspired_by": ["Residual of the C014 comment fix — string literals are not yet stripped before the sort check"],
+  "is_control": true,
+  "tier": "frontier",
+  "findings": []
+}

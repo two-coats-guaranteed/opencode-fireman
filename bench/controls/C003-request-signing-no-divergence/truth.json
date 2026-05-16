@@ -1,0 +1,9 @@
+{
+  "case_id": "C003",
+  "description": "Three request signers with no divergence — matched control for T003.",
+  "category": null,
+  "inspired_by": ["Matched control for T003-canonical-request-signing"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

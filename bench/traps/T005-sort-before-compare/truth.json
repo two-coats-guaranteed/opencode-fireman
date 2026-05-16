@@ -1,0 +1,20 @@
+{
+  "case_id": "T005",
+  "description": "Permission comparison sorts both sides for set-equality; sibling comparisons are order-sensitive by design.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "Set-equality vs sequence-equality bugs in access-control checks"
+  ],
+  "is_control": false,
+  "tier": "core",
+  "findings": [
+    {
+      "file": "compare-permissions.ts",
+      "start_line": 7,
+      "end_line": 14,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "comparePermissions shares the shape of compareFields and compareRoutes but sorts both inputs before comparing. Permissions are a set; the sort is what makes the comparison order-independent. Unify it onto the order-sensitive helper and equivalent permission sets start comparing unequal — flaky authz decisions."
+    }
+  ]
+}

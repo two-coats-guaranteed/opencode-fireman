@@ -1,0 +1,18 @@
+{
+  "case_id": "T017",
+  "description": "FRONTIER: one rounding function uses banker's rounding for money; siblings use ordinary Math.round for display. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "numeric-rounding",
+  "inspired_by": ["Accounting drift from biased rounding applied to monetary values"],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "round-charge.ts",
+      "start_line": 8,
+      "end_line": 14,
+      "category": "numeric-rounding",
+      "severity": "high",
+      "rationale": "roundCharge implements round-half-to-even because monetary totals must reconcile against the accounting system's exact rule; roundRating and roundProgress use ordinary Math.round for display. Unify them onto Math.round and every half-cent biases upward — systematic financial drift. A numeric-rounding detector should flag the divergent rounding logic; v0.1 (sort-only) cannot."
+    }
+  ]
+}

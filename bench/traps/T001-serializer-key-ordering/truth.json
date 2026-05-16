@@ -8,6 +8,7 @@
     "github:auth0/node-jsonwebtoken#404"
   ],
   "is_control": false,
+  "tier": "core",
   "findings": [
     {
       "file": "audit-serializer.ts",

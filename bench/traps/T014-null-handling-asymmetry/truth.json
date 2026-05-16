@@ -1,0 +1,18 @@
+{
+  "case_id": "T014",
+  "description": "FRONTIER: one extractor null-guards an optional-join field; siblings read mandatory fields. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "null-handling",
+  "inspired_by": ["Null-pointer regressions from deduplicating defensive and non-defensive field access"],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "extract-manager.ts",
+      "start_line": 10,
+      "end_line": 16,
+      "category": "null-handling",
+      "severity": "high",
+      "rationale": "extractManager guards against a null manager because profile.manager comes from an optional join; extractName and extractEmail read mandatory fields and skip the guard. Unify the three and the guard is dropped — a production NPE on every contractor or top-level record. A null-handling detector should flag the divergent guard; v0.1 (sort-only) cannot."
+    }
+  ]
+}

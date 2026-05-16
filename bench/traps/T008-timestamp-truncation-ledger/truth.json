@@ -1,0 +1,20 @@
+{
+  "case_id": "T008",
+  "description": "FRONTIER: one timestamp function truncates to whole seconds for a downstream contract; siblings keep millisecond precision. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "timestamp-truncation",
+  "inspired_by": [
+    "Precision-mismatch bugs between millisecond and unix-second timestamp stores"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "stamp-ledger.ts",
+      "start_line": 8,
+      "end_line": 10,
+      "category": "timestamp-truncation",
+      "severity": "high",
+      "rationale": "stampLedger shares the shape of stampEvent and stampMetric but truncates to whole seconds via Math.floor(t/1000)*1000. The truncation is part of the settlement-system contract. A timestamp-truncation detector should flag the divergent arithmetic; v0.1 (sort-only) cannot."
+    }
+  ]
+}

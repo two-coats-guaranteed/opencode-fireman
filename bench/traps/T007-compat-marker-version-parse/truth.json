@@ -1,0 +1,20 @@
+{
+  "case_id": "T007",
+  "description": "FRONTIER: a function whose load-bearing legacy behavior is marked by an explicit DO-NOT-SIMPLIFY comment. v0.1 strips comments and detects only sort-divergence, so it misses this.",
+  "category": "compatibility-marker",
+  "inspired_by": [
+    "\"DO NOT REMOVE\" / \"LEGACY\" comments guarding on-disk format compatibility"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "parse-version.ts",
+      "start_line": 7,
+      "end_line": 14,
+      "category": "compatibility-marker",
+      "severity": "medium",
+      "rationale": "parseVersion carries an explicit LEGACY / DO-NOT-SIMPLIFY marker tying its empty-segment handling to an on-disk archive format. A compatibility-marker detector should surface the marked region when an edit touches it; v0.1 strips comments before analysis and only looks for sort-divergence, so it cannot."
+    }
+  ]
+}

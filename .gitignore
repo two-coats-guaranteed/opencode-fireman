@@ -17,4 +17,4 @@ build/
 
 # Bun
 bun.lockb
-.idea
+*.zip

@@ -1,0 +1,9 @@
+{
+  "case_id": "C009",
+  "description": "Three comparison functions with no divergence — matched control for T005.",
+  "category": null,
+  "inspired_by": ["Matched control for T005-sort-before-compare"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

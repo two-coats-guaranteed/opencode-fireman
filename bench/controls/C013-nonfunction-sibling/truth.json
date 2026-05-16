@@ -1,0 +1,9 @@
+{
+  "case_id": "C013",
+  "description": "A sorting function whose only sibling file declares constants, not functions — no comparable peer, so no finding.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — sibling file with no functions to compare"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

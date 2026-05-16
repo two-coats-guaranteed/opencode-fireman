@@ -1,0 +1,9 @@
+{
+  "case_id": "C011",
+  "description": "Two fingerprint functions with no divergence — matched control for T013.",
+  "category": null,
+  "inspired_by": ["Matched control for T013-config-fingerprint-minimal"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

@@ -41,7 +41,12 @@ const FN_HEADER_RE =
   /export\s+function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*(?::\s*[^{]+)?\{/g;
 
 const IDENT_RE = /\b([A-Za-z_$][\w$]*)\b/g;
-const SORT_RE = /\.sort\s*\(/;
+/**
+ * Matches an in-place `.sort(` or the immutable `.toSorted(`. Both are
+ * order-establishing calls; a divergence between a sibling that uses one
+ * and a sibling that uses the other is not a real divergence.
+ */
+const SORT_RE = /\.(?:sort|toSorted)\s*\(/;
 
 const KEYWORDS = new Set([
   "const", "let", "var", "function", "return", "if", "else", "for", "while",
@@ -65,12 +70,16 @@ function stripComments(source: string): string {
     .replace(/\/\/[^\n]*/g, " ");
 }
 
-function extractIdentifiers(body: string): Set<string> {
-  const cleaned = stripComments(body);
+/**
+ * Extracts identifiers from a function body. Expects the body to already
+ * have comments stripped (see extractFunctions) — keywords are filtered
+ * out so the set reflects structural vocabulary.
+ */
+function extractIdentifiers(strippedBody: string): Set<string> {
   const out = new Set<string>();
   IDENT_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
-  while ((m = IDENT_RE.exec(cleaned)) !== null) {
+  while ((m = IDENT_RE.exec(strippedBody)) !== null) {
     const id = m[1];
     if (id && !KEYWORDS.has(id)) out.add(id);
   }
@@ -117,12 +126,17 @@ export function extractFunctions(source: string): FunctionRecord[] {
     if (endIdx < 0) continue; // unbalanced; skip
 
     const body = source.slice(braceOpenIdx, endIdx + 1);
+    // Strip comments before BOTH identifier extraction and the sort
+    // check, so a `.sort(` mentioned inside a comment cannot trigger a
+    // false positive. (String-literal occurrences are a rarer residual
+    // edge case and are not handled here.)
+    const stripped = stripComments(body);
     out.push({
       name,
       startLine,
       endLine: lineOf(source, endIdx),
-      identifiers: extractIdentifiers(body),
-      hasSort: SORT_RE.test(body),
+      identifiers: extractIdentifiers(stripped),
+      hasSort: SORT_RE.test(stripped),
     });
   }
   return out;

@@ -40,12 +40,19 @@ interface Truth {
   category: string | null;
   inspired_by?: string[];
   is_control: boolean;
+  /**
+   * "core" cases gate CI (G5/G6). "frontier" cases are tracked and
+   * reported but do not gate — they document known detector limits that
+   * a future detector iteration is expected to fix. Missing = "core".
+   */
+  tier?: "core" | "frontier";
   findings: TruthEntry[];
 }
 
 interface CaseResult {
   case_id: string;
   is_control: boolean;
+  tier: "core" | "frontier";
   expected: number;
   detected: number;
   true_positives: number;
@@ -118,6 +125,7 @@ async function evaluateCase(
   return {
     case_id: truth.case_id,
     is_control: truth.is_control,
+    tier: truth.tier ?? "core",
     expected: expected.length,
     detected: findings.length,
     true_positives: tp,
@@ -138,12 +146,18 @@ interface Summary {
   fp_per_control: number;
   g5_pass: boolean;
   g6_pass: boolean;
+  frontier_count: number;
+  frontier_fp: number;
+  frontier_missed: number;
   results: CaseResult[];
 }
 
 function summarize(results: CaseResult[]): Summary {
-  const traps = results.filter((r) => !r.is_control);
-  const controls = results.filter((r) => r.is_control);
+  // Only "core" cases gate G5/G6. Frontier cases are reported separately.
+  const core = results.filter((r) => r.tier === "core");
+  const traps = core.filter((r) => !r.is_control);
+  const controls = core.filter((r) => r.is_control);
+  const frontier = results.filter((r) => r.tier === "frontier");
 
   const totalTP = traps.reduce((s, r) => s + r.true_positives, 0);
   const totalExpected = traps.reduce((s, r) => s + r.expected, 0);
@@ -160,6 +174,13 @@ function summarize(results: CaseResult[]): Summary {
     fp_per_control: fpPerControl,
     g5_pass: recall >= RECALL_TARGET,
     g6_pass: fpPerControl <= FP_PER_CONTROL_TARGET,
+    frontier_count: frontier.length,
+    frontier_fp: frontier
+      .filter((r) => r.is_control)
+      .reduce((s, r) => s + r.detected, 0),
+    frontier_missed: frontier.filter(
+      (r) => !r.is_control && r.true_positives < r.expected,
+    ).length,
     results,
   };
 }
@@ -167,23 +188,41 @@ function summarize(results: CaseResult[]): Summary {
 function printSummary(s: Summary): void {
   console.log("Fireman-Bench-v1 Results");
   console.log("=======================");
-  console.log(`Traps:            ${s.trap_count}`);
-  console.log(`Controls:         ${s.control_count}`);
+  console.log(`Core traps:        ${s.trap_count}`);
+  console.log(`Core controls:     ${s.control_count}`);
   console.log(
-    `Recall (G5):      ${s.recall_pct.toFixed(1)}%   target >= ${(RECALL_TARGET * 100).toFixed(0)}%   ${s.g5_pass ? "PASS" : "FAIL"}`,
+    `Recall (G5):       ${s.recall_pct.toFixed(1)}%   target >= ${(RECALL_TARGET * 100).toFixed(0)}%   ${s.g5_pass ? "PASS" : "FAIL"}`,
   );
   console.log(
     `FP / control (G6): ${s.fp_per_control.toFixed(2)}   target <= ${FP_PER_CONTROL_TARGET}   ${s.g6_pass ? "PASS" : "FAIL"}`,
   );
   console.log();
-  console.log("Per-case:");
-  for (const r of s.results) {
+  console.log("Per-case (core):");
+  for (const r of s.results.filter((x) => x.tier === "core")) {
     let status: string;
     if (r.is_control) status = r.false_positives === 0 ? "OK  " : "FP  ";
     else status = r.true_positives === r.expected ? "PASS" : "MISS";
     console.log(
       `  ${status}  ${r.case_id}   tp=${r.true_positives} fp=${r.false_positives} fn=${r.false_negatives}`,
     );
+  }
+
+  if (s.frontier_count > 0) {
+    console.log();
+    console.log(
+      `Frontier (known limits, not gated): ${s.frontier_count} case(s) — ` +
+        `${s.frontier_fp} false positive(s), ${s.frontier_missed} missed trap(s)`,
+    );
+    for (const r of s.results.filter((x) => x.tier === "frontier")) {
+      const note = r.is_control
+        ? r.false_positives > 0
+          ? "false positive (precision ceiling)"
+          : "clean"
+        : r.true_positives === r.expected
+          ? "detected"
+          : "missed (recall ceiling)";
+      console.log(`  ~~  ${r.case_id}   ${note}`);
+    }
   }
 }
 

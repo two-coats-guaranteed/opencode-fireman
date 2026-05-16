@@ -1,0 +1,21 @@
+{
+  "case_id": "T003",
+  "description": "Canonical signer sorts header names for signature stability; sibling signers do not.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "AWS Signature Version 4 — canonical headers (sorted)",
+    "OAuth 1.0 signature base string — sorted parameters"
+  ],
+  "is_control": false,
+  "tier": "core",
+  "findings": [
+    {
+      "file": "sign-canonical.ts",
+      "start_line": 14,
+      "end_line": 20,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "signCanonical shares the shape of signRead and signWrite but sorts header names before building the string-to-sign. The server recomputes the signature over sorted headers; removing the sort makes client and server signatures diverge and every request 401s. An agent unifying the three signers onto one helper will drop the sort unless warned."
+    }
+  ]
+}

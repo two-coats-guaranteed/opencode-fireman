@@ -1,0 +1,18 @@
+{
+  "case_id": "T016",
+  "description": "FRONTIER: one encoder uses base64url for URL/JWT safety; siblings use standard base64. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "encoding-divergence",
+  "inspired_by": ["Broken links and rejected JWTs from standard base64 in URL positions"],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "encode-link-token.ts",
+      "start_line": 8,
+      "end_line": 10,
+      "category": "encoding-divergence",
+      "severity": "high",
+      "rationale": "encodeLinkToken uses the url-safe base64url alphabet because its output goes into URLs and JWT segments; its siblings use standard base64 for internal storage. Unify them and link tokens start carrying '+', '/' and '=' — broken URLs and JWT parse failures. An encoding-divergence detector should flag the differing encoding argument; v0.1 (sort-only) cannot."
+    }
+  ]
+}

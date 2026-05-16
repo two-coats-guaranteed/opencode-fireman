@@ -1,0 +1,9 @@
+{
+  "case_id": "C014",
+  "description": "A function whose body mentions .sort() only inside a comment — it does not actually sort. Fireman must not fire.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — sort token inside a comment must not trigger the detector"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

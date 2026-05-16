@@ -1,0 +1,18 @@
+{
+  "case_id": "T015",
+  "description": "FRONTIER: one normalizer uses locale-independent toLowerCase() for a security check; siblings use locale-aware toLocaleLowerCase(). v0.1 detects only sort-divergence, so it misses this.",
+  "category": "locale-sensitivity",
+  "inspired_by": ["The Turkish-i bug — locale-dependent case folding breaking identity comparisons"],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "normalize-login-key.ts",
+      "start_line": 9,
+      "end_line": 11,
+      "category": "locale-sensitivity",
+      "severity": "high",
+      "rationale": "normalizeLoginKey deliberately uses locale-independent toLowerCase() so login keys fold identically everywhere; its siblings use toLocaleLowerCase() for display. An agent 'making them consistent' by switching to toLocaleLowerCase() reintroduces the Turkish-i account-collision bug. A locale-sensitivity detector should flag the divergent method; v0.1 (sort-only) cannot."
+    }
+  ]
+}

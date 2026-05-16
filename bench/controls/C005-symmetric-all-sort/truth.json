@@ -1,0 +1,9 @@
+{
+  "case_id": "C005",
+  "description": "Three similar renderers that ALL sort — sorting is the local convention, not a divergence.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — proves the detector keys on divergence, not on the presence of sort"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

@@ -1,0 +1,18 @@
+{
+  "case_id": "T012",
+  "description": "One archive-key builder sorts tags for content-addressed keys; four sibling builders do not.",
+  "category": "sibling-divergence",
+  "inspired_by": ["Content-addressed storage keys requiring canonical segment order"],
+  "is_control": false,
+  "tier": "core",
+  "findings": [
+    {
+      "file": "build-archive-key.ts",
+      "start_line": 11,
+      "end_line": 17,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "buildArchiveKey sorts tag segments while its four sibling builders (user/order/event/session) do not. The sort makes archive keys content-addressed so the same record cannot be stored twice under different tag orders. This case checks the detector still isolates a single divergent function within a larger sibling group."
+    }
+  ]
+}

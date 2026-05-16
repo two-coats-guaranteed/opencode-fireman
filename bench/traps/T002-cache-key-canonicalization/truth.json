@@ -1,0 +1,21 @@
+{
+  "case_id": "T002",
+  "description": "Query cache-key builder sorts params for canonical cache keys; sibling builders do not.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "HTTP cache key query-parameter normalization (CDN/Varnish canonicalization)",
+    "github:pillarjs/cookies — canonical ordering for cache correctness"
+  ],
+  "is_control": false,
+  "tier": "core",
+  "findings": [
+    {
+      "file": "query-cache-key.ts",
+      "start_line": 13,
+      "end_line": 22,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "queryCacheKey shares the shape of assetCacheKey and pageCacheKey but sorts query parameters before folding them into the key. The sort is load-bearing: clients send equivalent queries with parameters in arbitrary order, and the sort is what collapses them to one cache entry. Dedupe it onto the unsorted helper and the cache hit rate degrades silently."
+    }
+  ]
+}

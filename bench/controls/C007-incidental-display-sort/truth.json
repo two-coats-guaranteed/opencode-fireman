@@ -1,0 +1,9 @@
+{
+  "case_id": "C007",
+  "description": "FRONTIER: an incidental, cosmetic divergent sort. v0.1 structural analysis cannot tell this from a load-bearing sort, so it produces a false positive. Tracked, not gated.",
+  "category": null,
+  "inspired_by": ["Precision-ceiling counterpart to T001 — a divergent sort that is genuinely safe to remove"],
+  "is_control": true,
+  "tier": "frontier",
+  "findings": []
+}

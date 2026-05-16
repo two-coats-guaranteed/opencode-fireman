@@ -1,0 +1,20 @@
+{
+  "case_id": "T010",
+  "description": "FRONTIER: one retry loop halts the batch on failure to preserve ordering; siblings continue past failures. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "retry-asymmetry",
+  "inspired_by": [
+    "Ordering / idempotency regressions from unifying order-sensitive and order-independent retry loops"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "retry-ledger.ts",
+      "start_line": 10,
+      "end_line": 27,
+      "category": "retry-asymmetry",
+      "severity": "high",
+      "rationale": "retryLedger shares the shape of retryFetch and retryNotify but adds an early return that stops the whole batch when a job exhausts its retries. The early return is the ordering guarantee — without it a later entry can commit before an earlier one. A retry-asymmetry detector should flag the divergent control flow; v0.1 (sort-only) cannot."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "C006",
+  "description": "A sorting function whose siblings are structurally unrelated — no comparable sibling, so no finding.",
+  "category": null,
+  "inspired_by": ["Standalone clean control — exercises the low-similarity (Jaccard below threshold) path"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

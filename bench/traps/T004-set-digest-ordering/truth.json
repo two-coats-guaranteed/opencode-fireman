@@ -1,0 +1,21 @@
+{
+  "case_id": "T004",
+  "description": "Set-digest function sorts members before hashing for an order-independent fingerprint; siblings do not.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "Order-independent collection hashing (set/Merkle digests)",
+    "ETag computation over unordered result sets"
+  ],
+  "is_control": false,
+  "tier": "core",
+  "findings": [
+    {
+      "file": "digest-members.ts",
+      "start_line": 10,
+      "end_line": 16,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "digestMembers shares the shape of digestTags and digestLabels but sorts before hashing. The sort makes the digest order-independent, which is what lets it key a dedup cache. Remove it and the same set in a different order hashes differently, silently breaking deduplication."
+    }
+  ]
+}

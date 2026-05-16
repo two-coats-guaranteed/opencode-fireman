@@ -1,0 +1,9 @@
+{
+  "case_id": "C010",
+  "description": "Five key builders with no divergence — matched control for T012.",
+  "category": null,
+  "inspired_by": ["Matched control for T012-archive-key-many-siblings"],
+  "is_control": true,
+  "tier": "core",
+  "findings": []
+}

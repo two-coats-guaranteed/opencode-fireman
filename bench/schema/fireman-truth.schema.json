@@ -24,6 +24,12 @@
         "timestamp-truncation",
         "bitmask-density",
         "retry-asymmetry",
+        "null-handling",
+        "locale-sensitivity",
+        "encoding-divergence",
+        "numeric-rounding",
+        "error-handling",
+        "regex-anchoring",
         null
       ],
       "description": "Primary trap category. Null for controls."
@@ -36,6 +42,11 @@
     "is_control": {
       "type": "boolean",
       "description": "True for controls (Fireman should NOT fire). False for traps."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["core", "frontier"],
+      "description": "core cases gate CI (G5/G6). frontier cases are tracked and reported but do not gate — they document known detector limits. Missing is treated as core."
     },
     "findings": {
       "type": "array",

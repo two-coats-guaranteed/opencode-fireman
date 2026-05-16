@@ -1,0 +1,20 @@
+{
+  "case_id": "T011",
+  "description": "FRONTIER: a load-bearing sort-divergence between three functions in the SAME file. v0.1 only compares functions across files, so it misses within-file divergence.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "Architectural limit of v0.1: cross-file-only sibling comparison"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "session-serializers.ts",
+      "start_line": 16,
+      "end_line": 23,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "serializeReceipt key-sorts for signature stability while its in-file siblings serializeSession and serializeProfile do not — the exact T001 pattern. v0.1 only compares a target function against functions in OTHER files in the directory, so a divergence among functions in one file is invisible to it. A future detector should also compare functions within the same file."
+    }
+  ]
+}

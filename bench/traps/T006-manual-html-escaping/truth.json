@@ -1,0 +1,20 @@
+{
+  "case_id": "T006",
+  "description": "FRONTIER: one renderer manually HTML-escapes untrusted input; siblings do not. v0.1 detects only sort-divergence, so it misses this.",
+  "category": "manual-escaping",
+  "inspired_by": [
+    "Stored-XSS regressions from deduplicating escaped and unescaped render paths"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "render-user-cell.ts",
+      "start_line": 7,
+      "end_line": 13,
+      "category": "manual-escaping",
+      "severity": "high",
+      "rationale": "renderUserCell shares the shape of renderStaticCell and renderHeaderCell but inserts an HTML-escaping replace-chain because its input is user-supplied. Removing the escaping during a dedup is a stored-XSS hole. A manual-escaping detector should flag the divergent replace-chain; v0.1 (sort-only) cannot."
+    }
+  ]
+}

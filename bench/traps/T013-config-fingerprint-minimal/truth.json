@@ -1,0 +1,18 @@
+{
+  "case_id": "T013",
+  "description": "Config fingerprint sorts fields for order-independence; the one sibling (log fingerprint) does not.",
+  "category": "sibling-divergence",
+  "inspired_by": ["Order-independent config hashing vs order-preserving log hashing"],
+  "is_control": false,
+  "tier": "core",
+  "findings": [
+    {
+      "file": "fingerprint-config.ts",
+      "start_line": 9,
+      "end_line": 12,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "fingerprintConfig sorts fields before hashing so the fingerprint is order-independent; fingerprintLog hashes in arrival order. This case checks the detector fires in the minimal setup — exactly one sibling to compare against."
+    }
+  ]
+}
