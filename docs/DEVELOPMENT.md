@@ -1,0 +1,166 @@
+# Development & design
+
+Internals, guarantees, and contributor workflow for `opencode-fireman`.
+For the user-facing overview see the [README](../README.md); for the test
+corpus see [bench/README.md](../bench/README.md).
+
+## How it works (v0.1)
+
+When the agent reads a `.ts` / `.tsx` file, Fireman:
+
+1. Parses every `export function` in the file.
+2. Parses every `export function` in the file's directory siblings.
+3. For each function in the read file, finds structurally similar
+   siblings (Jaccard ≥ 0.4 on identifier sets, comments stripped).
+4. If the target function contains a sort call (`.sort(` or the
+   immutable `.toSorted(`, ignoring occurrences inside comments) and
+   **none** of its similar siblings do, it appends a compact warning to
+   the read tool's output.
+
+## What it explicitly does NOT do (yet)
+
+- **One detector only.** Sibling-divergence-by-sort. The architecture
+  supports more, but v0.1 ships one.
+- **One language.** TypeScript / TSX.
+- **One directory hop.** No cross-module analysis, no imports graph.
+- **No history.** No git churn, no revert mining, no caching.
+- **No ML.** Pure heuristics + regex AST extraction.
+
+Every new detector arrives through the same loop: a new trap case in the
+bench + a matched control + the detector code that catches one without
+firing on the other.
+
+## Guarantees
+
+Fireman makes seven falsifiable claims. Six are testable by the bench in
+this repo. The seventh (G7) lives in the separate `fireman-tasks` repo.
+
+| ID | Claim | How tested | Status |
+|----|-------|-----------|--------|
+| G1 | Never writes to disk | Source review; only `output` objects are mutated | mechanical |
+| G2 | Never aborts a tool call | No `throw` reachable from any hook handler | mechanical |
+| G3 | ≤ 400 ms per analysis | Detector wrapped in `Promise.race` with a 400 ms timeout in `src/index.ts` | mechanical |
+| G4 | ≤ 80 tokens per warning | Fixed template, max 3 findings, no LLM in the loop | mechanical |
+| G5 | ≥ 80% recall on bench traps | `bun run bench`; gates CI | **7/7 core traps** |
+| G6 | ≤ 10% false-positive rate on bench controls | `bun run bench`; gates CI | **0 FP / 14 core controls** |
+| G7 | Measurable behavioral lift on agent refactor tasks | `fireman-tasks` repo (harness + 3-task seed; needs an API key to run) | not yet measured |
+
+## Known caveats
+
+**Injection mechanism.** The OpenCode plugin docs are thin on the exact
+output shape for `tool.execute.after` on `read`. `src/index.ts` mutates
+the first string-valued field it finds among `output`, `result`, `text`,
+`content` — and falls back to `client.app.log()` if none are present. If
+warnings aren't surfacing, run OpenCode with logging enabled and check
+for `fireman-finding-not-injected` entries. The fix is likely a one-line
+key change.
+
+**Regex AST extraction.** `src/detector.ts` uses a regex + brace-match
+for function discovery. It is intentionally simple for v0.1 and will be
+replaced with [web-tree-sitter](https://github.com/tree-sitter/tree-sitter)
+when the second detector category lands. Functions defined as
+`const fn = () => { ... }` are not detected; only `export function
+name(...)` forms are. This matches the bench corpus today.
+
+## Working on it
+
+```bash
+bun install               # dev deps incl. typescript and @types/node
+bun run typecheck         # strict tsc, no emit
+bun run bench             # runs Fireman-Bench-v1; gates G5/G6, exit 1 on fail
+bun run build             # emits dist/ via tsc -p tsconfig.build.json
+bun run pack:check        # dry-run npm pack to inspect tarball contents
+```
+
+Expected `bun run bench` output on a clean checkout:
+
+```
+Fireman-Bench-v1 Results
+=======================
+Core traps:        7
+Core controls:     14
+Recall (G5):       100.0%   target >= 80%   PASS
+FP / control (G6): 0.00   target <= 0.1   PASS
+
+Per-case (core):
+  PASS  T001 .. T013     all 7 traps detected
+  OK    C001 .. C015     all 14 controls clean
+
+Frontier (known limits, not gated): 14 case(s) — 2 false positive(s), 12 missed trap(s)
+  ~~  T006 .. T019   missed (recall ceiling — categories v0.1 can't see yet)
+  ~~  C007, C016     false positive (precision ceiling / residual)
+```
+
+The bench is split into two tiers. **Core** cases gate CI — G5 and G6 are
+computed over them. **Frontier** cases document known detector limits: the
+twelve frontier traps (T006–T019) are real bug classes — manual escaping,
+compatibility markers, timestamp truncation, bitmask layout, retry
+ordering, within-file divergence, null handling, locale sensitivity,
+encoding, numeric rounding, error propagation, and regex anchoring — that
+v0.1's sort-only detector cannot see, and C007/C016 are precision cases it
+false-positives on. Frontier cases are reported but do not gate. See
+[bench/README.md](../bench/README.md) for the full tier explanation.
+
+## Build & publish
+
+The package is built with `tsc` (not `bun build`) because tsc emits both
+`.js` and `.d.ts` from a single config. The source uses `.ts` import
+specifiers; `rewriteRelativeImportExtensions` in `tsconfig.build.json`
+rewrites them to `.js` in `dist/`, so consumers see standard ESM.
+
+```bash
+bun run build      # produces dist/
+bun pm pack        # produces opencode-fireman-X.Y.Z.tgz
+```
+
+Publishing is automated via GitHub Actions
+([`.github/workflows/publish.yml`](../.github/workflows/publish.yml)):
+
+1. Bump `version` in `package.json`.
+2. Commit and tag: `git tag v0.2.0 && git push --tags`.
+3. CI runs typecheck → bench → build → `npm publish --provenance`.
+4. Requires the `NPM_TOKEN` repo secret.
+
+CI also verifies on every push / PR
+([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)): typecheck
+passes, bench passes G5 and G6, build succeeds, the **built**
+`dist/detector.js` catches T001, and `npm pack` produces a tarball with
+only `dist/`, `README.md`, `LICENSE`, and `package.json`.
+
+## Layout
+
+```
+opencode-fireman/
+├── src/                       Source — what gets built
+│   ├── index.ts               OpenCode plugin entrypoint (the hook)
+│   ├── detector.ts            Pure detector function — no OpenCode dep
+│   └── types.ts               Shared Finding type
+├── dist/                      Built artifacts (gitignored; published)
+├── bench/                     Test corpus & harness (not published)
+│   ├── README.md
+│   ├── schema/
+│   ├── traps/  controls/      The 35-case corpus
+│   └── harness/run.ts         Gates G5/G6, exit 1 on fail
+├── docs/DEVELOPMENT.md         This file
+├── assets/                     README media
+├── .github/workflows/
+│   ├── ci.yml                 typecheck + bench + build + pack
+│   └── publish.yml            npm publish on v* tag
+├── package.json
+├── tsconfig.json              typecheck/editor config (noEmit)
+└── tsconfig.build.json        emit config; targets dist/
+```
+
+The detector is split from the plugin so the bench can drive it without
+OpenCode installed, and so adding detectors doesn't risk regressions in
+the hook wiring.
+
+## Roadmap
+
+- **v0.2** — replace regex extraction with web-tree-sitter; add the
+  `manual-escaping` detector and at least 5 trap/control pairs.
+- **v0.3** — add `compatibility-marker`, `timestamp-truncation`;
+  Fireman-Bench reaches 15+ trap/control pairs.
+- **v0.4** — first real run of `fireman-tasks` (G7). If lift is
+  measurable, ship v1.0. If not, stop building and report what we
+  learned.
