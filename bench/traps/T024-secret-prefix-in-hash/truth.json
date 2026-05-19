@@ -1,0 +1,24 @@
+{
+  "case_id": "T024",
+  "description": "signWebhook prepends a secret to the payload before hashing (MAC); hashAsset and hashIdempotency hash the payload alone.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "hmac-vs-hash",
+    "github-webhook-secret",
+    "stripe-signature"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "sign-webhook.ts",
+      "start_line": 10,
+      "end_line": 12,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "signWebhook is structurally near-identical to hashAsset and hashIdempotency (single sha256hex call, string return) but prefixes the secret before hashing. The prefix is load-bearing: without it the output is an unauthenticated content hash, not a MAC, and any party with the payload can forge a matching signature. An agent that normalises the three onto a shared hash() will drop the secret prefix unless warned."
+    }
+  ],
+  "detector_layer": "structural",
+  "tier_note": "Requires structural+data-flow detector; beyond regex detector scope."
+}

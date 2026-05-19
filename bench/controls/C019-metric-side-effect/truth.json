@@ -1,0 +1,9 @@
+{
+  "case_id": "C019",
+  "description": "resolveOrg calls metrics.increment before returning; resolveUser and resolveGroup do not. The counter is a pure side effect and does not change the return value.",
+  "category": "sibling-divergence",
+  "inspired_by": ["observability-instrumentation", "billing-metering"],
+  "is_control": true,
+  "tier": "frontier",
+  "findings": []
+}

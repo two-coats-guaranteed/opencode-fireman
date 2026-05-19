@@ -1,0 +1,23 @@
+{
+  "case_id": "T025",
+  "description": "renderComment escapes HTML in user-supplied text; renderTitle and renderCategory embed trusted CMS content without escaping.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "owasp-xss",
+    "react-dangerouslySetInnerHTML"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "render-comment.ts",
+      "start_line": 9,
+      "end_line": 11,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "renderComment is structurally near-identical to renderTitle and renderCategory (template literal, single string arg) but wraps the interpolated value in escapeHtml. The escape call is load-bearing: comment text is user-controlled input; without escaping, a comment like '<script>alert(1)</script>' executes as JavaScript in the browser. An agent that normalises the three onto a shared render() will drop the escapeHtml call unless warned."
+    }
+  ],
+  "detector_layer": "structural",
+  "tier_note": "Requires structural+data-flow detector; beyond regex detector scope."
+}

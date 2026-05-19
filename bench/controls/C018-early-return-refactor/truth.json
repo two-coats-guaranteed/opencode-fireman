@@ -1,0 +1,9 @@
+{
+  "case_id": "C018",
+  "description": "isValidTag uses a single compound boolean expression; isValidHandle and isValidSlug use two early-return guards followed by the regex test. All three implement identical validation logic.",
+  "category": "sibling-divergence",
+  "inspired_by": ["guard-clause-vs-compound-condition"],
+  "is_control": true,
+  "tier": "frontier",
+  "findings": []
+}

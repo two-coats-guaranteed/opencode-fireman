@@ -1,0 +1,23 @@
+{
+  "case_id": "T022",
+  "description": "renderDisplayName guards against a null/empty displayName; renderEmail and renderRole call .trim() unconditionally.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "nullable-field-divergence",
+    "legacy-schema-migration"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "render-display-name.ts",
+      "start_line": 9,
+      "end_line": 15,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "renderDisplayName is structurally near-identical to renderEmail and renderRole (single User arg, string return, .trim() call) but adds an early-return branch for the falsy case. The branch is load-bearing: user.displayName is nullable on legacy accounts, so calling .trim() without the guard throws a TypeError at runtime. An agent that normalises the three onto a shared helper will drop the guard unless warned."
+    }
+  ],
+  "detector_layer": "structural",
+  "tier_note": "Requires structural+data-flow detector; beyond regex detector scope."
+}

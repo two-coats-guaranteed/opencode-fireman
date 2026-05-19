@@ -1,0 +1,23 @@
+{
+  "case_id": "T023",
+  "description": "pageOffset wraps the product in Math.trunc to guarantee an integer result; itemCount and totalItems return the raw float.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "sql-offset-integer-requirement",
+    "pagination-off-by-one"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "page-offset.ts",
+      "start_line": 9,
+      "end_line": 11,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "pageOffset is structurally near-identical to itemCount and totalItems (two numeric params, arithmetic return) but wraps the result in Math.trunc. The truncation is load-bearing: SQL OFFSET requires an integer; a float offset is either a syntax error or produces non-deterministic pagination depending on the database driver. An agent that normalises the three onto a shared multiply helper will drop the truncation unless warned."
+    }
+  ],
+  "detector_layer": "structural",
+  "tier_note": "Requires structural+data-flow detector; beyond regex detector scope."
+}

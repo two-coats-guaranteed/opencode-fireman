@@ -30,11 +30,14 @@
     "build": "bun run clean && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "bench": "bun bench/harness/run.ts",
+    "sim": "bun src/similarity/test.ts",
+    "characterize": "bun src/similarity/characterize-test.ts",
     "smoke": "bun scripts/smoke.mjs",
     "consumer-test": "bash scripts/consumer-test.sh",
     "test": "bun run typecheck && bun run bench",
     "pack:check": "bun run build && bun pm pack --dry-run",
-    "prepublishOnly": "bun run typecheck && bun run bench && bun run build && bun run smoke"
+    "prepublishOnly": "bun run typecheck && bun run bench && bun run build && bun run smoke",
+    "llm-resolve": "bun src/similarity/llm-resolve-test.ts"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "*"
@@ -67,5 +70,13 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-cpp": "^0.23.4",
+    "tree-sitter-java": "^0.23.5",
+    "tree-sitter-python": "^0.25.0",
+    "tree-sitter-scala": "^0.24.0",
+    "web-tree-sitter": "^0.26.8"
   }
 }

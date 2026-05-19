@@ -1,0 +1,9 @@
+{
+  "case_id": "C020",
+  "description": "buildTokenPayload uses explicit `key: value` object syntax; buildUserPayload and buildSessionPayload use ES2015 shorthand. Both produce identical objects.",
+  "category": "sibling-divergence",
+  "inspired_by": ["es2015-shorthand-property"],
+  "is_control": true,
+  "tier": "frontier",
+  "findings": []
+}

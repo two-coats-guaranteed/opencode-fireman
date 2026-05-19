@@ -1,0 +1,9 @@
+{
+  "case_id": "C017",
+  "description": "formatEstimate has an extra console.log call that formatInvoice and formatReceipt lack. The log does not affect the return value.",
+  "category": "sibling-divergence",
+  "inspired_by": ["debug-log-left-in"],
+  "is_control": true,
+  "tier": "frontier",
+  "findings": []
+}

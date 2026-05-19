@@ -1,0 +1,23 @@
+{
+  "case_id": "T020",
+  "description": "buildApiUrl percent-encodes the path segment; buildProxyUrl and buildCdnUrl do not.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "rfc3986",
+    "express-router#path-traversal"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "build-api-url.ts",
+      "start_line": 9,
+      "end_line": 11,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "buildApiUrl is structurally identical to buildProxyUrl and buildCdnUrl (template literal, two params, one return) except it wraps the path in encodeURIComponent. The encoding is load-bearing: without it, paths containing spaces, slashes, or percent signs corrupt the URL, causing routing failures and potential path-traversal issues. An agent that normalises the three onto a shared helper will drop the encode call unless warned."
+    }
+  ],
+  "detector_layer": "structural",
+  "tier_note": "Requires structural+data-flow detector; beyond regex detector scope."
+}

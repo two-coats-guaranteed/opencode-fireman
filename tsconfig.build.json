@@ -10,5 +10,5 @@
     "removeComments": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "bench", "dist"]
+  "exclude": ["node_modules", "bench", "dist", "src/similarity"]
 }

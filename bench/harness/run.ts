@@ -46,6 +46,12 @@ interface Truth {
    * a future detector iteration is expected to fix. Missing = "core".
    */
   tier?: "core" | "frontier";
+  /**
+   * "regex"      – detectable by the shipped regex/AST detector (default).
+   * "structural" – requires the structural+data-flow analyzer; not
+   *                expected to be caught by the regex layer alone.
+   */
+  detector_layer?: "regex" | "structural";
   findings: TruthEntry[];
 }
 
@@ -53,6 +59,7 @@ interface CaseResult {
   case_id: string;
   is_control: boolean;
   tier: "core" | "frontier";
+  detector_layer: "regex" | "structural";
   expected: number;
   detected: number;
   true_positives: number;
@@ -126,6 +133,7 @@ async function evaluateCase(
     case_id: truth.case_id,
     is_control: truth.is_control,
     tier: truth.tier ?? "core",
+    detector_layer: truth.detector_layer ?? "regex",
     expected: expected.length,
     detected: findings.length,
     true_positives: tp,
@@ -153,11 +161,16 @@ interface Summary {
 }
 
 function summarize(results: CaseResult[]): Summary {
-  // Only "core" cases gate G5/G6. Frontier cases are reported separately.
-  const core = results.filter((r) => r.tier === "core");
+  // G5/G6 gate on core regex-layer cases only.
+  // Structural-layer cases are not expected to be caught by the regex detector.
+  const core = results.filter(
+    (r) => r.tier === "core" && r.detector_layer !== "structural",
+  );
   const traps = core.filter((r) => !r.is_control);
   const controls = core.filter((r) => r.is_control);
-  const frontier = results.filter((r) => r.tier === "frontier");
+  const frontier = results.filter(
+    (r) => r.tier === "frontier" && r.detector_layer !== "structural",
+  );
 
   const totalTP = traps.reduce((s, r) => s + r.true_positives, 0);
   const totalExpected = traps.reduce((s, r) => s + r.expected, 0);
@@ -198,7 +211,9 @@ function printSummary(s: Summary): void {
   );
   console.log();
   console.log("Per-case (core):");
-  for (const r of s.results.filter((x) => x.tier === "core")) {
+  for (const r of s.results.filter(
+    (x) => x.tier === "core" && x.detector_layer !== "structural",
+  )) {
     let status: string;
     if (r.is_control) status = r.false_positives === 0 ? "OK  " : "FP  ";
     else status = r.true_positives === r.expected ? "PASS" : "MISS";
@@ -207,13 +222,28 @@ function printSummary(s: Summary): void {
     );
   }
 
+  // Structural-layer cases are tested by `bun run characterize`, not the regex detector.
+  const structural = s.results.filter((r) => r.detector_layer === "structural");
+  if (structural.length > 0) {
+    console.log();
+    console.log(
+      `Structural-layer (tested by 'bun run characterize', not regex detector): ${structural.length} case(s)`,
+    );
+    for (const r of structural) {
+      const kind = r.is_control ? "control" : "trap";
+      console.log(`  ~~  ${r.case_id}   ${kind}`);
+    }
+  }
+
   if (s.frontier_count > 0) {
     console.log();
     console.log(
       `Frontier (known limits, not gated): ${s.frontier_count} case(s) — ` +
         `${s.frontier_fp} false positive(s), ${s.frontier_missed} missed trap(s)`,
     );
-    for (const r of s.results.filter((x) => x.tier === "frontier")) {
+    for (const r of s.results.filter(
+      (x) => x.tier === "frontier" && x.detector_layer !== "structural",
+    )) {
       const note = r.is_control
         ? r.false_positives > 0
           ? "false positive (precision ceiling)"

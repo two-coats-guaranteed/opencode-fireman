@@ -1,0 +1,23 @@
+{
+  "case_id": "T021",
+  "description": "findAccount lowercases the email before the map lookup; findSession and findDevice pass their keys unchanged.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "rfc5321",
+    "auth0/node-auth0#case-sensitivity"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "findings": [
+    {
+      "file": "find-account.ts",
+      "start_line": 9,
+      "end_line": 11,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "findAccount is structurally near-identical to findSession and findDevice (single-arg map lookup with ?? null) but calls toLowerCase on the key first. The normalisation is load-bearing: without it, 'Alice@Example.COM' and 'alice@example.com' resolve to different (or missing) records, producing auth failures for users who registered with mixed-case email addresses. An agent that unifies the three helpers will drop the normalisation unless warned."
+    }
+  ],
+  "detector_layer": "structural",
+  "tier_note": "Requires structural+data-flow detector; beyond regex detector scope."
+}
