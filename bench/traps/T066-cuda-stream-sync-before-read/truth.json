@@ -1,0 +1,19 @@
+{
+  "case_id": "T066",
+  "description": "read_payment_score issues cudaMemcpyAsync followed by cudaStreamSynchronize before reading the host buffer; the other two readers do straight-line CPU copies and read immediately. Unifying onto a shared reader that drops the stream sync returns uninitialised memory on the checkout path.",
+  "category": "sibling-divergence",
+  "inspired_by": ["cuda-async-memcpy", "missing-stream-sync"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "read_payment_score.c",
+      "start_line": 24,
+      "end_line": 28,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "read_payment_score calls cudaStreamSynchronize between the async copy and the host read; the other two readers use a synchronous CPU copy with no sync. Extra-call shape — the sync is sequenced between the side-effecting memcpy and the return that dereferences h_out[0]."
+    }
+  ]
+}

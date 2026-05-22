@@ -1,0 +1,19 @@
+{
+  "case_id": "T051",
+  "description": "trackRequestScratch uses WeakMap so scratch state is GC'd with the request; trackMetricBucket and trackTraceBucket use Map (acceptable for their bounded long-lived keys). Unifying onto Map for all three leaks one scratch object per served request.",
+  "category": "sibling-divergence",
+  "inspired_by": ["memory-leak", "weakmap-vs-map"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "track-request-scratch.js",
+      "start_line": 14,
+      "end_line": 22,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "trackRequestScratch's store is a WeakMap; the other two use Map. WeakMap is load-bearing on the request path because request objects are short-lived and a Map retains them. Same structural shape, divergent constructor callee — escalate territory."
+    }
+  ]
+}

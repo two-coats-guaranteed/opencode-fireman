@@ -1,0 +1,10 @@
+{
+  "case_id": "C026",
+  "description": "formatCacheKey is an arrow expression; formatRouteKey and formatAssetKey are function declarations. All three produce identical output.",
+  "category": "sibling-divergence",
+  "inspired_by": ["arrow-vs-function-cosmetic"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

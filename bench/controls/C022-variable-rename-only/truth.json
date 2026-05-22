@@ -1,0 +1,10 @@
+{
+  "case_id": "C022",
+  "description": "sumWeights uses local variable name `acc`; sumPrices and sumCounts use `total`. Every other token, structure, and operation is identical.",
+  "category": "sibling-divergence",
+  "inspired_by": ["variable-rename-refactor"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

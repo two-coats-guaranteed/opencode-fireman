@@ -61,6 +61,10 @@ export interface NormFunction {
    * Undefined for programmatically-constructed NormFunctions.
    */
   sourceText?: string;
+  /** 1-indexed line where the function's first token sits. */
+  startLine?: number;
+  /** 1-indexed line where the function's last token sits. */
+  endLine?: number;
 }
 
 /** Construct a node, honouring exactOptionalPropertyTypes for `label`. */

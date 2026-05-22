@@ -1,0 +1,19 @@
+{
+  "case_id": "T075",
+  "description": "build_payment_snpe calls Snpe_SNPEBuilder_setRuntimeProcessor(SNPE_RUNTIME_DSP) to route the network to the Hexagon DSP. The other two builders run on CPU because the DSP doesn't implement their ops. Unifying onto a shared builder that drops the setRuntimeProcessor call re-introduces a 28x battery-burn regression.",
+  "category": "sibling-divergence",
+  "inspired_by": ["qualcomm-snpe", "hexagon-dsp"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "build_payment_snpe.c",
+      "start_line": 27,
+      "end_line": 31,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "Snpe_SNPEBuilder_setRuntimeProcessor returns int but the value is discarded — its effect is on the builder's internal config state. Constructor-side-effect family."
+    }
+  ]
+}

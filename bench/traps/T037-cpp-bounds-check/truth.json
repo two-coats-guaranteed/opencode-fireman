@@ -1,0 +1,19 @@
+{
+  "case_id": "T037",
+  "description": "lookup_user_perm guards the index with an early-return bounds check; lookup_color_palette and lookup_audio_channel access the vector unconditionally.",
+  "category": "sibling-divergence",
+  "inspired_by": ["cwe-125-out-of-bounds-read", "vector-bounds-check"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "lookup_user_perm.cpp",
+      "start_line": 14,
+      "end_line": 19,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "lookup_user_perm has an early-return bounds check that the other two lookups omit. The check is load-bearing on the auth path: the index is derived from user input via a non-collision-free hash, so out-of-bounds is reachable. Unifying onto a shared lookup() that drops the check re-introduces a heap out-of-bounds read."
+    }
+  ]
+}

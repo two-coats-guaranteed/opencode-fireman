@@ -1,0 +1,19 @@
+{
+  "case_id": "T047",
+  "description": "clampBillingAmount guards against NaN/Infinity via Number.isFinite; clampUiSliderValue and clampZoomLevel feed the value directly through Math.min/Math.max.",
+  "category": "sibling-divergence",
+  "inspired_by": ["nan-propagation", "ieee-754-edge-case"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "clamp-billing-amount.js",
+      "start_line": 14,
+      "end_line": 19,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "clampBillingAmount has a Number.isFinite early-return that the other two clampers omit. The guard is load-bearing: NaN compares neither < nor > anything, so Math.min/Math.max pass it through, and the billing audit log records NaN amounts. Unifying onto a shared clamp() that drops the guard poisons the audit data on any malformed numeric input."
+    }
+  ]
+}

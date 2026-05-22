@@ -1,0 +1,19 @@
+{
+  "case_id": "T046",
+  "description": "persistBillingEvent inspects the err parameter and propagates it; persistDebugEvent and persistMetricEvent ignore err and unconditionally call cb(null, id).",
+  "category": "sibling-divergence",
+  "inspired_by": ["lost-callback-error", "silent-failure"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "persist-billing-event.js",
+      "start_line": 15,
+      "end_line": 22,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "persistBillingEvent branches on the err parameter while the other two writers ignore it entirely. The err-check is load-bearing on the billing path: silently dropping a write on EROFS/ENOSPC produces direct revenue loss. Unifying onto a shared writer that drops the err inspection re-introduces silent failures on disk pressure."
+    }
+  ]
+}

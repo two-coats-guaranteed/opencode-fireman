@@ -1,0 +1,10 @@
+{
+  "case_id": "C030",
+  "description": "Three Java summers. A and B use for-each loops; C uses a stream pipeline. Same sequential summation, same result, same exception behaviour.",
+  "category": "sibling-divergence",
+  "inspired_by": ["stream-vs-loop"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "T071",
+  "description": "fetch_payment_score_hip issues hipMemcpyAsync + hipStreamSynchronize before reading h_out[0]; the other two readers use a synchronous CPU copy. Unifying onto a shared reader that drops the stream sync returns uninitialised memory on the AMD MI300 checkout path.",
+  "category": "sibling-divergence",
+  "inspired_by": ["amd-rocm-hip", "missing-stream-sync"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "fetch_payment_score_hip.c",
+      "start_line": 25,
+      "end_line": 29,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "hipStreamSynchronize's return is discarded — the call's effect is on stream state. Constructor-side-effect family: same pattern as T066 (CUDA), T065 (NPU DMA), T029/T039 (lock_guard)."
+    }
+  ]
+}

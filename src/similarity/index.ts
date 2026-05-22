@@ -23,6 +23,7 @@ import { parseFunctions as parseFunctionsJava } from "./java-adapter.ts";
 import { parseFunctions as parseFunctionsCpp } from "./cpp-adapter.ts";
 import { parseFunctions as parseFunctionsC } from "./c-adapter.ts";
 import { parseFunctions as parseFunctionsScala } from "./scala-adapter.ts";
+import { parseFunctions as parseFunctionsPhp } from "./php-adapter.ts";
 
 export interface FunctionUnit {
   id: string;
@@ -33,6 +34,9 @@ export interface FunctionUnit {
   shingles: Set<string>;
   /** Raw source text of this function — for LLM-escalation prompts. */
   sourceText?: string;
+  /** 1-indexed line range of this function in its source file. */
+  startLine?: number;
+  endLine?: number;
 }
 
 export interface TwinPair {
@@ -57,7 +61,7 @@ export interface ResidualDelta {
 function detectLanguage(
   label: string,
   explicit?: string,
-): "ts" | "py" | "java" | "cpp" | "c" | "scala" | null {
+): "ts" | "py" | "java" | "cpp" | "c" | "scala" | "php" | null {
   if (explicit) {
     const l = explicit.toLowerCase();
     if (l === "ts" || l === "typescript") return "ts";
@@ -66,6 +70,7 @@ function detectLanguage(
     if (l === "cpp" || l === "c++") return "cpp";
     if (l === "c") return "c";
     if (l === "scala") return "scala";
+    if (l === "php") return "php";
     return null;
   }
   const ext = label.split(".").pop()?.toLowerCase() ?? "";
@@ -75,12 +80,13 @@ function detectLanguage(
   if (ext === "cpp" || ext === "cxx" || ext === "cc" || ext === "hpp" || ext === "hxx") return "cpp";
   if (ext === "c" || ext === "h") return "c";
   if (ext === "scala" || ext === "sc") return "scala";
+  if (ext === "php") return "php";
   // Default: TypeScript (preserves backward-compat for extension-less labels)
   return "ts";
 }
 
 async function parseForLang(
-  lang: "ts" | "py" | "java" | "cpp" | "c" | "scala",
+  lang: "ts" | "py" | "java" | "cpp" | "c" | "scala" | "php",
   source: string,
   label: string,
 ): Promise<NormFunction[]> {
@@ -91,6 +97,7 @@ async function parseForLang(
     case "cpp":   return parseFunctionsCpp(source, label);
     case "c":     return parseFunctionsC(source, label);
     case "scala": return parseFunctionsScala(source, label);
+    case "php":   return parseFunctionsPhp(source, label);
   }
 }
 
@@ -120,6 +127,8 @@ export async function buildUnits(
         shingles: shingleSet(fn.tree),
       };
       if (fn.sourceText !== undefined) unit.sourceText = fn.sourceText;
+      if (fn.startLine !== undefined) unit.startLine = fn.startLine;
+      if (fn.endLine !== undefined) unit.endLine = fn.endLine;
       units.push(unit);
     }
   }

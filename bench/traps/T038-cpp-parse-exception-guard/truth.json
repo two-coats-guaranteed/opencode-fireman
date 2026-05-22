@@ -1,0 +1,19 @@
+{
+  "case_id": "T038",
+  "description": "parse_request_size wraps std::stoi in try/catch to absorb malformed-input exceptions; parse_internal_priority and parse_internal_weight let stoi propagate.",
+  "category": "sibling-divergence",
+  "inspired_by": ["dos-via-crash", "input-validation"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "parse_request_size.cpp",
+      "start_line": 19,
+      "end_line": 24,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "parse_request_size wraps std::stoi in try/catch; the other two parsers let the exception propagate. The guard is load-bearing on the request path: the header value is attacker-controllable, and an unhandled invalid_argument/out_of_range crashes the worker process. Unifying onto a shared parse() that drops the catch re-introduces a DoS vector."
+    }
+  ]
+}

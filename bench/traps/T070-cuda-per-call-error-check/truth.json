@@ -1,0 +1,19 @@
+{
+  "case_id": "T070",
+  "description": "setup_payment_dev_buffers checks the cudaError_t after every CUDA call and cleans up the half-allocated state on failure; the other two siblings batch errors at the end via cudaGetLastError. Unifying onto a shared setup() that uses only the batched check re-introduces the silent-corrupt-memory bug from the payment-OOM incident.",
+  "category": "sibling-divergence",
+  "inspired_by": ["sticky-cuda-errors", "leak-on-half-alloc"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "setup_payment_dev_buffers.c",
+      "start_line": 23,
+      "end_line": 36,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "setup_payment_dev_buffers has BRANCHes after each CUDA call with explicit cudaFree cleanup; the other two have no BRANCHes and just call the final cudaGetLastError. Significant structural divergence — multiple extra BRANCHes, multiple extra cleanup CALLs."
+    }
+  ]
+}

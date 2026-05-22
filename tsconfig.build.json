@@ -10,5 +10,13 @@
     "removeComments": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "bench", "dist", "src/similarity"]
+  "exclude": [
+    "node_modules",
+    "bench",
+    "dist",
+    "src/plugin-smoke.ts",
+    "src/similarity/test.ts",
+    "src/similarity/characterize-test.ts",
+    "src/similarity/llm-resolve-test.ts"
+  ]
 }

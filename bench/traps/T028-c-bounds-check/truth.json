@@ -1,0 +1,24 @@
+{
+  "case_id": "T028",
+  "description": "get_config_value bounds-checks the index before array access; get_metric_value and get_status_value access the array unconditionally.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "cwe-125-out-of-bounds-read",
+    "untrusted-index"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "get_config_value.c",
+      "start_line": 13,
+      "end_line": 18,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "get_config_value is structurally near-identical to get_metric_value and get_status_value (pointer-array lookup by index) but adds an early-return guard for out-of-bounds index. Without the guard, accessing values[index] with an attacker-controlled index causes undefined behaviour (out-of-bounds read / crash)."
+    }
+  ],
+  "known_miss": true,
+  "miss_reason": "Jaccard(get_config_value, consensus) \u2248 0.30 < 0.40 threshold: large guard block (if + inner RETURN) inflates shingle count enough that the functions fall below the twin-detection floor."
+}

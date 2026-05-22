@@ -1,0 +1,19 @@
+{
+  "case_id": "T031",
+  "description": "transferFunds is annotated @Transactional so the two updates commit atomically; transferLog and transferNotice perform two updates without the annotation and may partially apply on failure.",
+  "category": "sibling-divergence",
+  "inspired_by": ["acid-transactions", "spring-Transactional"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "TransferFunds.java",
+      "start_line": 17,
+      "end_line": 22,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "transferFunds carries @Transactional that transferLog and transferNotice lack. The annotation is load-bearing: without it, a failure between the debit and credit leaves the ledger inconsistent. An agent that normalises the three onto a shared helper will drop the annotation unless warned."
+    }
+  ]
+}

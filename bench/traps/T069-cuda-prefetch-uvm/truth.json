@@ -1,0 +1,19 @@
+{
+  "case_id": "T069",
+  "description": "run_payment_uvm_model calls cudaMemPrefetchAsync to migrate UVM pages to the device before kernel launch; the other two skip the prefetch (hot data is already device-resident). Unifying onto a shared runner that drops the prefetch produces a 50x runtime regression under page-fault thrashing.",
+  "category": "sibling-divergence",
+  "inspired_by": ["unified-memory-prefetch", "page-fault-thrash"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "run_payment_uvm_model.c",
+      "start_line": 24,
+      "end_line": 28,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "run_payment_uvm_model has an extra cudaMemPrefetchAsync call before the kernel launch; the other two go straight to launch. The prefetch's return value is discarded — its effect is on UVM page residency. Constructor-side-effect family (T029/T039/T061/T065/T068)."
+    }
+  ]
+}

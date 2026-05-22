@@ -1,0 +1,19 @@
+{
+  "case_id": "T059",
+  "description": "enqueue_billing_event uses emplace_back to construct Event in-place from the forwarded arguments; enqueue_metric_event and enqueue_trace_event use push_back of a temporary (acceptable for the POD types they hold). Unifying onto push_back-of-temporary for billing re-introduces a checkout-p99 regression.",
+  "category": "sibling-divergence",
+  "inspired_by": ["emplace-vs-push-back", "perf-regression"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "enqueue_billing_event.cpp",
+      "start_line": 22,
+      "end_line": 24,
+      "category": "sibling-divergence",
+      "severity": "low",
+      "rationale": "emplace_back(args) is structurally `CALL(MEMBER(IDENT, IDENT_CALLEE(emplace_back)), args)`; push_back(T(args)) wraps the args in an extra CALL (the temporary constructor). Same call-chain shape, divergent receiver-method name + extra wrapping CALL. Label-divergence or structural-unclassified."
+    }
+  ]
+}

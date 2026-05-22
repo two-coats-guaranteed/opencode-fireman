@@ -1,0 +1,19 @@
+{
+  "case_id": "T039",
+  "description": "read_active_session_count takes a lock_guard on the registry mutex before reading; read_static_buildinfo_count and read_static_feature_count read without synchronisation.",
+  "category": "sibling-divergence",
+  "inspired_by": ["cwe-362-race-condition", "memory-model-data-race"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "read_active_session_count.cpp",
+      "start_line": 18,
+      "end_line": 21,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "read_active_session_count constructs a lock_guard before the field read; the other two reads run without synchronisation. The lock is load-bearing: SessionRegistry::active_count is written concurrently by handler threads, and an unsynchronised read is undefined behaviour under the C++ memory model regardless of whether the read happens to look atomic on a given platform."
+    }
+  ]
+}

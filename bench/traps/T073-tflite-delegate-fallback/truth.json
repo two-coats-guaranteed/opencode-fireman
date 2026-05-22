@@ -1,0 +1,19 @@
+{
+  "case_id": "T073",
+  "description": "load_payment_model_accel registers the Edge TPU delegate with an explicit error-check that returns -1 on delegate failure; the other two loaders are CPU-only and skip the delegate. Unifying onto a shared loader that drops the delegate-with-error-check re-introduces silent CPU fallback at 1/40th throughput.",
+  "category": "sibling-divergence",
+  "inspired_by": ["tflite-delegate", "google-coral-edgetpu"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "load_payment_model_accel.c",
+      "start_line": 27,
+      "end_line": 35,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "load_payment_model_accel has an extra BRANCH on the delegate-registration result that returns -1 — flows to the function's return value. extra-branch shape, on critical path. Should flag cleanly."
+    }
+  ]
+}

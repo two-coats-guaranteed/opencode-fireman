@@ -1,0 +1,19 @@
+{
+  "case_id": "T060",
+  "description": "cleanup_expired_sessions uses the O(n) erase-remove idiom; cleanup_temp_logs and cleanup_debug_marks loop with index and call erase(begin()+i) per match — O(n^2). Unifying onto the naive index-erase pattern re-introduces a 40ms auth-latency stall under session-table load.",
+  "category": "sibling-divergence",
+  "inspired_by": ["erase-remove-idiom", "quadratic-stall"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "cleanup_expired_sessions.cpp",
+      "start_line": 19,
+      "end_line": 27,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "cleanup_expired_sessions calls erase(remove_if(...), end()) — a nested CALL chain with a lambda. The other two iterate index-based and call erase inside a BRANCH inside a LOOP. Completely different control-flow shapes (no LOOP / no BRANCH in the divergent), Jaccard-floor territory."
+    }
+  ]
+}

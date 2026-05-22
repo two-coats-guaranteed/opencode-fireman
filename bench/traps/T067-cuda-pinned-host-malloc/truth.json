@@ -1,0 +1,19 @@
+{
+  "case_id": "T067",
+  "description": "allocate_payment_io_buffers uses cudaMallocHost for page-locked memory so cudaMemcpyAsync is truly async; the other two allocators use malloc (acceptable because their callers use sync cudaMemcpy). Unifying onto malloc for all three re-introduces the checkout-latency regression.",
+  "category": "sibling-divergence",
+  "inspired_by": ["pinned-memory", "async-fallback-to-sync"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "allocate_payment_io_buffers.c",
+      "start_line": 22,
+      "end_line": 30,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "allocate_payment_io_buffers calls cudaMallocHost (returns cudaError_t, error checked via != cudaSuccess); the other two call malloc (returns void*, error checked via == NULL). Same statement count, same BRANCH count, but different callees and different comparison targets — same family as T045 (operator-label) and T051 (callee-label)."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "T040",
+  "description": "render_external_node_label guards against a null shared_ptr; render_internal_node_label and render_cached_node_label dereference the pointer unconditionally.",
+  "category": "sibling-divergence",
+  "inspired_by": ["null-pointer-dereference", "cwe-476"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "render_external_node_label.cpp",
+      "start_line": 16,
+      "end_line": 21,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "render_external_node_label has an early-return null check that the other two renderers omit. The guard is load-bearing: external graphs can contain dangling references that surface as null shared_ptrs; without the guard the program dereferences null and segfaults on malformed input."
+    }
+  ]
+}

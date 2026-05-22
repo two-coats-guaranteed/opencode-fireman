@@ -1,0 +1,19 @@
+{
+  "case_id": "T044",
+  "description": "fetchCheckoutDeps runs three independent service calls in parallel via Promise.all; fetchAdminPageDeps and fetchDebugPageDeps await sequentially.",
+  "category": "sibling-divergence",
+  "inspired_by": ["latency-budget", "parallel-vs-serial-fetch"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "fetch-checkout-deps.js",
+      "start_line": 15,
+      "end_line": 21,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "fetchCheckoutDeps parallelises with Promise.all while the other two helpers await sequentially. The Promise.all is load-bearing on the checkout path: cart abandonment correlates with wall-clock latency, and serialising the three independent fetches restored the latency regression that drove this code change."
+    }
+  ]
+}

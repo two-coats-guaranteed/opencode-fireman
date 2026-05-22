@@ -211,6 +211,8 @@ export async function parseFunctionsForConfig(
       source: label,
       tree: buildFunctionTree(fn, config),
       sourceText: fn.text,
+      startLine: fn.startPosition.row + 1,
+      endLine: fn.endPosition.row + 1,
     });
   }
   return results;

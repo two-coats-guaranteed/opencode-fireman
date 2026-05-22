@@ -1,0 +1,19 @@
+{
+  "case_id": "T054",
+  "description": "buildUserClaimsDict creates the dict with Object.create(null) (prototype-free) for user-controlled keys; the other two builders use plain {} which inherits Object.prototype. Unifying onto a shared {} builder re-introduces prototype-pollution writes on the auth path.",
+  "category": "sibling-divergence",
+  "inspired_by": ["prototype-pollution", "cwe-1321-prototype-write"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "build-user-claims-dict.js",
+      "start_line": 17,
+      "end_line": 23,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "buildUserClaimsDict initialises the dict via Object.create(null) — a CALL — while the other two use {} which is an object-literal. Same loop body, divergent DECL initialiser. Structurally a CALL vs OBJECT mismatch; the detector may classify it as label-divergence or structural-unclassified."
+    }
+  ]
+}

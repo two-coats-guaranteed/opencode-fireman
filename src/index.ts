@@ -1,44 +1,66 @@
 /**
- * opencode-fireman plugin entrypoint.
+ * opencode-fireman plugin entrypoint (v0.2).
  *
  * Registers a `tool.execute.after` hook on the `read` tool. When the agent
- * reads a TypeScript file, Fireman runs its detector against the file and,
- * if findings are produced, appends a compact warning to the read output so
- * the agent sees it before planning any edit.
+ * reads a source file in a supported language (TypeScript, JavaScript,
+ * Python, Java, C/C++, Scala, or PHP), Fireman runs its structural
+ * analyser against the file and, if findings are produced, appends a
+ * compact warning to the read output so the agent sees it before
+ * planning any edit.
+ *
+ * v0.1 used a regex sort-only detector. v0.2 uses the structural+data-flow
+ * pipeline in `src/similarity/`, which catches divergences across all
+ * supported languages — URL encoding, null guards, HMAC vs hash,
+ * HTML escape, bounds checks, mutex guards, sort ordering, and more.
  *
  * Design constraints (the plugin's guarantees):
  *   G1  Never writes to disk. Fireman only mutates the `output` object.
  *   G2  Never aborts a tool call. No `throw` on any code path here.
- *   G3  ≤ 400ms per analysis. Wrapped in Promise.race with a hard timeout.
- *   G4  ≤ 80 tokens per warning. Template is fixed, max 3 findings shown.
- *
- * NOTE on the injection mechanism: at v0.1, the exact field name for the
- * read tool's textual output is not fully documented in the public
- * OpenCode plugin API. This implementation tries the most likely fields
- * (`output.output`, `output.result`, `output.text`) and falls back to a
- * structured log via the client if none are mutable strings. The README
- * notes how to verify this on a fresh install.
+ *   G3  ≤ 3000ms per analysis. Wrapped in Promise.race with a hard timeout.
+ *       (Tree-sitter cold start dominates the first call; subsequent
+ *       calls are <100ms thanks to grammar caching and the parsed-unit
+ *       LRU in structural-analyzer.ts.)
+ *   G4  Max 3 findings shown per warning; fixed template.
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
-import { analyze } from "./detector.ts";
+import {
+  analyzeFile,
+  warmup,
+} from "./structural-analyzer.ts";
 import type { Finding } from "./types.ts";
 
-const ANALYSIS_TIMEOUT_MS = 400;
+const ANALYSIS_TIMEOUT_MS = 3000;
 const MAX_FINDINGS_IN_WARNING = 3;
 
-function withTimeout<T>(fn: () => T, ms: number): Promise<T | null> {
+export const SUPPORTED_EXTS: ReadonlySet<string> = new Set([
+  "ts", "tsx", "js", "jsx", "mjs", "cjs", // TypeScript/JavaScript
+  "py",                             // Python
+  "java",                           // Java
+  "c", "h",                         // C
+  "cpp", "cxx", "cc", "hpp", "hxx", // C++
+  "scala", "sc",                    // Scala
+  "php",                            // PHP
+]);
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve(null), ms);
-    try {
-      const r = fn();
-      clearTimeout(timer);
-      resolve(r);
-    } catch {
-      clearTimeout(timer);
-      resolve(null);
-    }
+    promise.then(
+      (r) => { clearTimeout(timer); resolve(r); },
+      () => { clearTimeout(timer); resolve(null); },
+    );
   });
+}
+
+function tagFor(f: Finding): string {
+  const asAny = f as unknown as Record<string, unknown>;
+  if (typeof asAny.shape === "string") {
+    const conf = typeof asAny.confidence === "number" ? asAny.confidence : 0;
+    return `${asAny.shape}, conf=${conf.toFixed(2)}`;
+  }
+  if (typeof asAny.marker === "string") return `compat-shim:${asAny.marker}`;
+  return f.category;
 }
 
 function buildWarning(filePath: string, findings: Finding[]): string {
@@ -46,16 +68,24 @@ function buildWarning(filePath: string, findings: Finding[]): string {
   const basename = filePath.split("/").pop() ?? filePath;
   const lines = shown.map(
     (f) =>
-      `- ${basename}:${f.start_line}-${f.end_line}: ${f.rationale}`,
+      `- ${basename}:${f.start_line}-${f.end_line} ` +
+      `[${tagFor(f)}]: ${f.rationale}`,
   );
+  const moreNote =
+    findings.length > MAX_FINDINGS_IN_WARNING
+      ? `\n  (… ${findings.length - MAX_FINDINGS_IN_WARNING} more findings suppressed)`
+      : "";
   return [
     "",
     "<fireman>",
-    "⚠ Fireman: this file contains a structurally asymmetric region that may encode a hidden invariant:",
+    "⚠ Fireman: this file contains region(s) whose meaning depends on " +
+      "context outside the local function body (sibling/cross-file " +
+      "asymmetry, or imports from a compatibility path). The signals may " +
+      "encode an invariant — verify before editing:",
     ...lines,
-    "Avoid normalizing it unless you've verified the asymmetry is incidental.",
+    moreNote,
     "</fireman>",
-  ].join("\n");
+  ].filter((l) => l.length > 0 || true).join("\n");
 }
 
 /** Try to append `warning` to whichever string field the output exposes. */
@@ -72,13 +102,20 @@ function tryAppendToOutput(output: unknown, warning: string): boolean {
   return false;
 }
 
+function extFromPath(filePath: string): string {
+  return filePath.split(".").pop()?.toLowerCase() ?? "";
+}
+
 export const Fireman: Plugin = async ({ client }) => {
+  // Background warmup of tree-sitter grammars. Best-effort — failures
+  // here just mean the first real analysis pays the cold-start cost.
+  void warmup();
+
   return {
     "tool.execute.after": async (input, output) => {
       if (input.tool !== "read") return;
 
-      // Best-effort extraction of the filePath from args. OpenCode's read
-      // tool uses `filePath`; we also check a couple of fallbacks.
+      // Extract filePath from args (OpenCode's read tool uses `filePath`).
       const args = (input as { args?: Record<string, unknown> }).args ?? {};
       const filePath =
         (typeof args.filePath === "string" && args.filePath) ||
@@ -86,10 +123,10 @@ export const Fireman: Plugin = async ({ client }) => {
         (typeof args.path === "string" && args.path) ||
         null;
       if (!filePath) return;
-      if (!filePath.endsWith(".ts") && !filePath.endsWith(".tsx")) return;
+      if (!SUPPORTED_EXTS.has(extFromPath(filePath))) return;
 
       const findings = await withTimeout(
-        () => analyze(filePath),
+        analyzeFile(filePath),
         ANALYSIS_TIMEOUT_MS,
       );
       if (!findings || findings.length === 0) return;
@@ -98,7 +135,6 @@ export const Fireman: Plugin = async ({ client }) => {
       const appended = tryAppendToOutput(output, warning);
 
       if (!appended && client?.app?.log) {
-        // Fallback: at least log the finding so the install can be verified.
         try {
           await client.app.log({
             body: {

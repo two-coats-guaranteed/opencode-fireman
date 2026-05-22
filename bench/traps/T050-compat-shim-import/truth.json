@@ -1,0 +1,19 @@
+{
+  "case_id": "T050",
+  "description": "userv1-adapter.ts imports from ../legacy/user-v1 — a compatibility-bridge import that warns the agent that local edits may break the V1 contract. The other two files import from the canonical ../users/user-v2 path.",
+  "category": "compat-shim",
+  "inspired_by": ["compatibility-shim", "legacy-bridge"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "userv1-adapter.ts",
+      "start_line": 6,
+      "end_line": 6,
+      "category": "compat-shim",
+      "severity": "medium",
+      "rationale": "userv1-adapter.ts imports from `../legacy/user-v1`. This file is a known compatibility bridge — the agent must check the contract of the non-legacy variant before editing functions here."
+    }
+  ]
+}

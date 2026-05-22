@@ -1,0 +1,19 @@
+{
+  "case_id": "T061",
+  "description": "phy_write_register issues __sync_synchronize() between the CTRL and DATA writes to enforce bus-level ordering. The two debug-register pairs have no such requirement (single internal latch). Unifying onto a shared writer that drops the barrier re-introduces an intermittent PHY initialisation hang on cold boot.",
+  "category": "sibling-divergence",
+  "inspired_by": ["memory-barrier", "mmio-write-ordering"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "phy_write_register.c",
+      "start_line": 21,
+      "end_line": 25,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "phy_write_register has an extra __sync_synchronize() call between two MMIO writes; the other two writers go straight ctrl-then-data. The barrier is load-bearing on the PHY init path — store buffers and compiler reordering both produce visible DATA-before-CTRL traffic without it."
+    }
+  ]
+}

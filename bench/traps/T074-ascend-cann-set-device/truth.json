@@ -1,0 +1,19 @@
+{
+  "case_id": "T074",
+  "description": "run_payment_inference_ascend calls aclrtSetDevice(payment_npu_id) before the AICore op launch to bind the calling thread to a tenant-pinned Ascend NPU. The other two runners run on shared global NPUs. Unifying onto a shared runner that drops aclrtSetDevice silently routes payment ops to the wrong NPU.",
+  "category": "sibling-divergence",
+  "inspired_by": ["huawei-ascend-cann", "multi-npu-current-device"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "run_payment_inference_ascend.c",
+      "start_line": 26,
+      "end_line": 30,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "aclrtSetDevice's return is discarded; its effect is on per-thread CANN runtime context. Constructor-side-effect family (T068 CUDA setDevice mirror). Same pattern, different vendor namespace."
+    }
+  ]
+}

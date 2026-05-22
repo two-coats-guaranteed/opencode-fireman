@@ -37,6 +37,7 @@ import {
   type NormKind,
   type NormNode,
   preorder,
+  size,
 } from "./normalized-ast.ts";
 import type { FunctionUnit } from "./index.ts";
 import { criticalPathAnalysis } from "./dataflow.ts";
@@ -96,6 +97,15 @@ export interface Characterization {
   confidence: number;
   shape: DivergenceShape;
   summary: string;
+  /**
+   * ID of the function that is structurally divergent from the consensus.
+   * Present when verdict is "flag" or "escalate" with reason
+   * "structural-unclassified" / "label-divergence". The plugin uses this
+   * to know which specific function in the family to surface.
+   */
+  divergentId?: string;
+  /** IDs of the consensus functions (everyone else in the family). */
+  consensusIds?: string[];
   /** Present when verdict === "escalate" — what the LLM call will consume. */
   escalation?: EscalationRequest;
 }
@@ -522,6 +532,8 @@ function characterizePair(
         summary:
           `divergent function has extra ${shape} but it is not on the ` +
           `critical path to the return value — needs semantic review`,
+        divergentId: divergent.id,
+        consensusIds: [consensus.id],
         escalation: {
           reason: "structural-unclassified",
           functionIds: familyIds,
@@ -546,6 +558,8 @@ function characterizePair(
         (cpa.onCriticalPath
           ? ` — on the critical path (${cpa.summary})`
           : ""),
+      divergentId: divergent.id,
+      consensusIds: [consensus.id],
     };
   }
 
@@ -558,6 +572,8 @@ function characterizePair(
       shape: "structural-unclassified",
       summary:
         "structural divergence present but no recognisable call/control shape",
+      divergentId: divergent.id,
+      consensusIds: [consensus.id],
       escalation: {
         reason: "structural-unclassified",
         functionIds: familyIds,
@@ -642,6 +658,21 @@ function twinFamily(
   units: FunctionUnit[],
   threshold = 0.4,
 ): FunctionUnit[] {
+  const families = allTwinFamilies(units, threshold);
+  let best: FunctionUnit[] = [];
+  for (const f of families) if (f.length > best.length) best = f;
+  return best;
+}
+
+/**
+ * Returns ALL twin families (connected components ≥ 2) in the unit set.
+ * Used by the plugin to characterise every family in a directory, not
+ * only the largest.
+ */
+export function allTwinFamilies(
+  units: FunctionUnit[],
+  threshold = 0.4,
+): FunctionUnit[][] {
   const n = units.length;
   const adj: number[][] = units.map(() => []);
   for (let i = 0; i < n; i++) {
@@ -654,7 +685,7 @@ function twinFamily(
   }
 
   const seen = new Array<boolean>(n).fill(false);
-  let best: number[] = [];
+  const out: FunctionUnit[][] = [];
 
   for (let i = 0; i < n; i++) {
     if (seen[i]) continue;
@@ -671,10 +702,9 @@ function twinFamily(
         }
       }
     }
-    if (comp.length > best.length) best = comp;
+    if (comp.length >= 2) out.push(comp.map((idx) => units[idx]!));
   }
-
-  return best.map((i) => units[i]!);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -781,6 +811,8 @@ export function characterizeFamily(
       confidence: 0.4,
       shape: "label-divergence",
       summary: `structurally identical twins differ in label(s): ${detail}`,
+      ...(outlier ? { divergentId: outlier.id } : {}),
+      consensusIds: consensusMajority.map((u) => u.id),
       escalation: {
         reason: "label-divergence",
         functionIds: familyIds,
@@ -794,7 +826,16 @@ export function characterizeFamily(
   }
 
   // Structural divergence: pick consensus (largest group) and a divergent member.
-  const sorted = [...groups.values()].sort((a, b) => b.length - a.length);
+  // When groups tie in size (common with 2-function families), use tree size
+  // as a tie-breaker — the smaller tree is the baseline consensus, and any
+  // larger tree is treated as "added structure" (divergent). Without this
+  // tie-break, the diff is computed backwards: insertions come out empty
+  // (the smaller tree has no extra structure) and the verdict misses to
+  // escalate when it should flag.
+  const sorted = [...groups.values()].sort((a, b) => {
+    if (a.length !== b.length) return b.length - a.length;
+    return size(a[0]!.tree) - size(b[0]!.tree);
+  });
   const consensus = sorted[0]![0]!;
   const divergent = sorted[1]![0]!;
   return characterizePair(consensus, divergent, familyIds, cg);

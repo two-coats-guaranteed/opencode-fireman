@@ -1,0 +1,19 @@
+{
+  "case_id": "T053",
+  "description": "fetchPaymentAuthorization sets up AbortController + setTimeout to enforce a 2s deadline; fetchUserProfile and fetchCmsBanner trust the upstream service to time out on its own. Unifying onto a shared fetcher that drops the AbortController re-introduces head-of-line blocking on the checkout path.",
+  "category": "sibling-divergence",
+  "inspired_by": ["head-of-line-blocking", "no-timeout"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "fetch-payment-authorization.js",
+      "start_line": 14,
+      "end_line": 24,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "fetchPaymentAuthorization has explicit AbortController + setTimeout + try/finally cleanup that the other two fetchers omit. The setup is load-bearing on the checkout path: a degraded upstream without the abort blocks workers indefinitely. Structural-unclassified or label-divergence territory — the body is multi-line and complex."
+    }
+  ]
+}

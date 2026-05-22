@@ -1,0 +1,19 @@
+{
+  "case_id": "T041",
+  "description": "getUserAttribute guards against prototype-chain traversal via hasOwnProperty; getInternalSetting and getStaticDefault index directly into the object.",
+  "category": "sibling-divergence",
+  "inspired_by": ["prototype-pollution", "cwe-1321"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "get-user-attribute.js",
+      "start_line": 15,
+      "end_line": 20,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "getUserAttribute guards the lookup with hasOwnProperty; the other two getters traverse the prototype chain. The guard is load-bearing on the user endpoint: an attacker-controlled key like \"__proto__\" reaches Object internals without it. Unifying onto a shared getter that drops the guard re-introduces prototype pollution."
+    }
+  ]
+}

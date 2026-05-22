@@ -1,0 +1,19 @@
+{
+  "case_id": "T052",
+  "description": "withPaymentLock uses try/finally to guarantee lock release even on error; withAuditSpan and withTraceSpan call begin/end straight-line and leak the span on exception (acceptable for observability).",
+  "category": "sibling-divergence",
+  "inspired_by": ["resource-leak-on-error", "advisory-lock-starvation"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "with-payment-lock.js",
+      "start_line": 14,
+      "end_line": 20,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "withPaymentLock wraps fn() in try/finally with release in the cleanup path; the other two wrappers don't. The finally is load-bearing — a thrown error from fn() leaves the Postgres advisory lock held until connection death. extra-try shape, on critical path."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "T026",
+  "description": "render_comment escapes user input via htmlspecialchars(); render_title and render_category embed trusted CMS text without escaping.",
+  "category": "sibling-divergence",
+  "inspired_by": ["owasp-xss", "php-htmlspecialchars"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "render_comment.php",
+      "start_line": 11,
+      "end_line": 14,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "render_comment is structurally near-identical to render_title and render_category (single string arg, string concatenation return) but wraps the interpolated value in htmlspecialchars(). The call is load-bearing: without it, a comment like '<script>alert(1)</script>' executes in the browser. An agent that unifies the three onto a shared render() will drop the escape call unless warned."
+    }
+  ]
+}

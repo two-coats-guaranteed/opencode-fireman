@@ -1,0 +1,19 @@
+{
+  "case_id": "T030",
+  "description": "load_user_config wraps open() in a `with` block (context manager); read_log_tail and read_cache_blob leave the descriptor unclosed.",
+  "category": "sibling-divergence",
+  "inspired_by": ["python-resource-management", "fd-leak"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "load_user_config.py",
+      "start_line": 16,
+      "end_line": 18,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "load_user_config is structurally near-identical to read_log_tail and read_cache_blob (read a file, return its contents) but wraps open() in a `with` block. The context manager is load-bearing: on a hot path the file descriptor count grows until the process hits ulimit. An agent that normalises the three onto a shared helper will drop the `with` clause unless warned."
+    }
+  ]
+}

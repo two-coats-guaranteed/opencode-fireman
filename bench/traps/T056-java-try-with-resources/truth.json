@@ -1,0 +1,19 @@
+{
+  "case_id": "T056",
+  "description": "ReadBillingFile wraps the BufferedReader in try-with-resources for guaranteed close; ReadMetricFile and ReadTraceFile leak the handle on exception (acceptable for the tmpfs paths they serve). Unifying onto a shared helper that drops try-with-resources re-introduces an EMFILE outage on the billing filesystem.",
+  "category": "sibling-divergence",
+  "inspired_by": ["resource-leak", "emfile-outage"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "ReadBillingFile.java",
+      "start_line": 17,
+      "end_line": 21,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "firstLine in ReadBillingFile wraps the reader in try-with-resources (a TRY node with a resource-declaration); the other two files create the reader as a plain DECL and never close it. Extra-try shape, on the critical path."
+    }
+  ]
+}

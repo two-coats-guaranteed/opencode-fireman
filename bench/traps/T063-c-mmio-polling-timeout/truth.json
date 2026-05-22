@@ -1,0 +1,19 @@
+{
+  "case_id": "T063",
+  "description": "wait_for_dma_complete uses a bounded for-loop with iteration cap and sentinel return; wait_for_buffer_swap and wait_for_overlay_ready use an unbounded while loop. The bounded loop is load-bearing on the DMA path — the external SPI bus is known to wedge under EMI on rev 1.4 boards, and an unbounded poll hangs the kernel.",
+  "category": "sibling-divergence",
+  "inspired_by": ["polling-timeout", "kernel-hang"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "wait_for_dma_complete.c",
+      "start_line": 19,
+      "end_line": 27,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "wait_for_dma_complete polls inside a bounded for-loop with explicit return on success and on timeout; the other two siblings spin in an unbounded while loop. Different LOOP shapes (for-with-counter vs while-with-condition), extra BRANCH for the timeout return."
+    }
+  ]
+}

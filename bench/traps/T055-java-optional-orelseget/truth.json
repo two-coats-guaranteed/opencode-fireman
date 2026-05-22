@@ -1,0 +1,19 @@
+{
+  "case_id": "T055",
+  "description": "LoadUser uses Optional.orElseGet with a Supplier lambda (lazy); LoadTag and LoadLabel use Optional.orElse with literal defaults (eager). Unifying onto orElse re-introduces the ghost-user bug — provisionNewUser would be invoked on every cache hit.",
+  "category": "sibling-divergence",
+  "inspired_by": ["lazy-vs-eager-default", "optional-orelse-vs-orelseget"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "LoadUser.java",
+      "start_line": 17,
+      "end_line": 19,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "loadOrProvision calls orElseGet with a lambda (FUNCTION inside CALL); the other two siblings call orElse with a simple member access. Same call-chain shape, divergent callee + argument complexity. May hit label-divergence (same shape, different IDENT_CALLEE) or structural-unclassified due to the embedded FUNCTION."
+    }
+  ]
+}

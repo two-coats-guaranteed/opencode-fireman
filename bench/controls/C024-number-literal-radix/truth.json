@@ -1,0 +1,10 @@
+{
+  "case_id": "C024",
+  "description": "permissionMaskExecute uses a decimal literal (64); permissionMaskRead and permissionMaskWrite use octal literals (0o400, 0o200). All three return the canonical Unix permission bit for their named operation; the literal radix is a source-text choice.",
+  "category": "sibling-divergence",
+  "inspired_by": ["radix-literal-cosmetic"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "T068",
+  "description": "alloc_payment_buffer calls cudaSetDevice(payment_device_id) before cudaMalloc to place the allocation on a tenant-specific GPU (data-residency requirement). The other two allocators serve global observability data and run on the default device. Unifying onto a shared allocator that drops cudaSetDevice silently places payment buffers on the wrong device.",
+  "category": "sibling-divergence",
+  "inspired_by": ["multi-gpu-current-device", "cross-tenant-data-placement"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "alloc_payment_buffer.c",
+      "start_line": 21,
+      "end_line": 24,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "alloc_payment_buffer has an extra cudaSetDevice() call before cudaMalloc; the other two go straight to cudaMalloc. cudaSetDevice returns cudaError_t but its result is discarded — the call's effect is purely on the CUDA-runtime per-thread current-device state. Same constructor-side-effect family as T029/T039/T061/T065: load-bearing side effect on external state, not on the function's return value."
+    }
+  ]
+}

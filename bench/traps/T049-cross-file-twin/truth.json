@@ -1,0 +1,19 @@
+{
+  "case_id": "T049",
+  "description": "Three files named format-event.ts live in three sibling sub-directories (shipping-handlers, billing-handlers, audit-handlers). The shipping-handlers variant wraps JSON.stringify in try/catch; the other two propagate exceptions. Directory-only sibling search would miss this — they live in different dirs.",
+  "category": "sibling-divergence",
+  "inspired_by": ["cross-package-twins", "contract-divergence"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "shipping-handlers/format-event.ts",
+      "start_line": 11,
+      "end_line": 17,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "shipping-handlers/format-event.ts wraps JSON.stringify in try/catch while its cross-directory twins (billing-handlers, audit-handlers) propagate exceptions. The try/catch is load-bearing: shipping has a no-exceptions contract with its downstream queue. Cross-file twin detection surfaces this divergence; directory-only search would miss it."
+    }
+  ]
+}

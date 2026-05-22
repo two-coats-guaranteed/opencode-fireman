@@ -1,0 +1,19 @@
+{
+  "case_id": "T045",
+  "description": "matchAuthToken uses strict equality (===); matchUiLabel and matchFeatureToggle use loose equality (==) which performs type coercion.",
+  "category": "sibling-divergence",
+  "inspired_by": ["type-coercion-bug", "auth-bypass"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "match-auth-token.js",
+      "start_line": 14,
+      "end_line": 16,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "matchAuthToken uses === while the other two matchers use ==. The strict-equality choice is load-bearing on the auth path: with ==, an attacker who can coerce one side to a falsy number (\"\" == 0, \"0\" == false) bypasses the comparison. Unifying onto a shared compare() that uses == re-introduces an auth-bypass vector."
+    }
+  ]
+}

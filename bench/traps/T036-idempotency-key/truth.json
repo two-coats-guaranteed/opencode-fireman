@@ -1,0 +1,19 @@
+{
+  "case_id": "T036",
+  "description": "chargePayment passes an Idempotency-Key header in its POST; emitWebhook and sendNotification omit the header.",
+  "category": "sibling-divergence",
+  "inspired_by": ["stripe-idempotency-key", "exactly-once-semantics"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "charge-payment.ts",
+      "start_line": 13,
+      "end_line": 17,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "chargePayment is structurally near-identical to emitWebhook and sendNotification (single POST to the processor with a request body) but adds an Idempotency-Key header. The header is load-bearing: without it, network-retry on payment endpoints causes duplicate charges, a customer-visible financial bug. An agent that normalises onto a shared post() will drop the header unless warned."
+    }
+  ]
+}

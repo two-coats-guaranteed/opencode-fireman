@@ -1,0 +1,19 @@
+{
+  "case_id": "T065",
+  "description": "submit_npu_inference calls dma_sync_single_for_device() between the host memcpy and the npu_enqueue, ensuring the input buffer is coherent for the NPU's DMA engine. submit_cpu_log_block and submit_cpu_trace_block submit to NPU ops that only the CPU reads back, where cache coherency isn't required. Unifying onto a shared submit_block() that drops the cache sync corrupts every NPU inference whose input contains recently-written data.",
+  "category": "sibling-divergence",
+  "inspired_by": ["dma-cache-coherence", "non-coherent-accelerator"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "submit_npu_inference.c",
+      "start_line": 24,
+      "end_line": 33,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "submit_npu_inference has an extra dma_sync_single_for_device() call between the memcpy and the npu_enqueue; the other two submit straight to the queue. The cache-sync is load-bearing on the non-coherent NPU path. extra-call shape, on the critical path leading to npu_enqueue."
+    }
+  ]
+}

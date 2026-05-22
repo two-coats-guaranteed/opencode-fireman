@@ -1,0 +1,19 @@
+{
+  "case_id": "T062",
+  "description": "run_payment_inference calls cudaDeviceSynchronize() between kernel launch and cudaGetLastError() to force runtime errors (illegal memory access on customer-influenced payloads) to surface. The other two runners launch kernels on internally-generated fixed-shape tensors where execution errors aren't reachable. Unifying onto a shared runner that drops the sync silently corrupts the GPU context on a single bad payment.",
+  "category": "sibling-divergence",
+  "inspired_by": ["cuda-async-kernel", "missing-device-sync"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "run_payment_inference.c",
+      "start_line": 26,
+      "end_line": 31,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "run_payment_inference has an extra cudaDeviceSynchronize() call between the kernel launch and the error-check; the other two skip it. The sync is load-bearing: without it, cudaGetLastError reports only launch-time errors and runtime kernel faults silently corrupt the GPU context. extra-call shape, on critical path."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "case_id": "C023",
+  "description": "All three functions are byte-identical except for the docstring length and content. Behaviour is identical.",
+  "category": "sibling-divergence",
+  "inspired_by": ["documentation-only-divergence"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "T027",
+  "description": "renderDisplayName guards against null/empty displayName; renderEmail and renderRole call .trim() unconditionally.",
+  "category": "sibling-divergence",
+  "inspired_by": ["nullable-field-divergence", "java-npe"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "renderDisplayName.java",
+      "start_line": 10,
+      "end_line": 16,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "renderDisplayName is structurally near-identical to renderEmail and renderRole (single User arg, .trim() call, string return) but adds an early-return null/empty guard. Without the guard, getDisplayName().trim() throws NullPointerException on legacy accounts."
+    }
+  ]
+}

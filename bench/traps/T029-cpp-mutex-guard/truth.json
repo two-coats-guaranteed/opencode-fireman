@@ -1,0 +1,24 @@
+{
+  "case_id": "T029",
+  "description": "update_shared_counter acquires a lock_guard before mutating the counter; update_local_counter and update_debug_counter modify the counter without synchronisation.",
+  "category": "sibling-divergence",
+  "inspired_by": [
+    "data-race",
+    "cwe-362-race-condition"
+  ],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "update_shared_counter.cpp",
+      "start_line": 11,
+      "end_line": 14,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "update_shared_counter is structurally near-identical to update_local_counter and update_debug_counter (int ref + delta, compound assignment) but constructs a lock_guard before the mutation. Without the guard the counter update is a data race; undefined behaviour under the C++ memory model."
+    }
+  ],
+  "known_escalation": true,
+  "escalation_reason": "lock_guard is a side-effect-only DECL on a void function; returnUses is empty so the data-flow analysis cannot connect the DECL to any returned value \u2192 offCriticalPath = false \u2192 routes to LLM."
+}

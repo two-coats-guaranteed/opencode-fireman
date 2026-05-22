@@ -1,0 +1,19 @@
+{
+  "case_id": "T048",
+  "description": "savePurchaseRecord awaits the durable write before returning; emitMetric and emitTrace fire-and-forget the insert.",
+  "category": "sibling-divergence",
+  "inspired_by": ["floating-promise", "fire-and-forget"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "save-purchase-record.js",
+      "start_line": 15,
+      "end_line": 18,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "savePurchaseRecord awaits the insert; the other two emitters fire-and-forget. The await is load-bearing on the purchase path: returning before the write durably commits means a 200 OK can be sent for a purchase the database never persisted. Unifying onto a shared emitter that drops the await re-introduces the silent-loss bug on checkout."
+    }
+  ]
+}

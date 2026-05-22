@@ -1,0 +1,19 @@
+{
+  "case_id": "T057",
+  "description": "SessionStore.currentSessions() wraps the internal list with Collections.unmodifiableList before returning; MetricStore and TraceStore return the raw mutable list. Unifying onto a shared helper that drops unmodifiableList re-introduces session-table corruption.",
+  "category": "sibling-divergence",
+  "inspired_by": ["defensive-copy", "exposed-mutable-state"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "SessionStore.java",
+      "start_line": 21,
+      "end_line": 23,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "currentSessions wraps the field access in Collections.unmodifiableList — an extra CALL on the critical path. The other two siblings return the field directly. extra-call shape, return-value flow."
+    }
+  ]
+}

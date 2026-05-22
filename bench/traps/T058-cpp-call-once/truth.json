@@ -1,0 +1,19 @@
+{
+  "case_id": "T058",
+  "description": "init_payment_gateway uses std::call_once for race-safe one-time initialisation; the other two initialisers use the naive `if (!ptr) ptr = make_unique(...)` pattern which is racy under concurrent first use. Unifying the three onto a shared lazy-init helper that drops call_once re-introduces a data race that crashes on double-init.",
+  "category": "sibling-divergence",
+  "inspired_by": ["double-checked-locking", "thread-safe-singleton"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "init_payment_gateway.cpp",
+      "start_line": 21,
+      "end_line": 26,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "init_payment_gateway calls std::call_once with a lambda; the other two initialisers branch on `if (!ptr)` and assign inside. Completely different control-flow shapes — likely Jaccard floor or structural-unclassified, since the divergent has no BRANCH and the siblings do."
+    }
+  ]
+}

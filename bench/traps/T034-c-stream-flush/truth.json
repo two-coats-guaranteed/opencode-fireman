@@ -1,0 +1,19 @@
+{
+  "case_id": "T034",
+  "description": "write_audit_record calls fflush after fputs; write_telemetry_sample and write_debug_marker rely on buffered output and can lose recent writes on crash.",
+  "category": "sibling-divergence",
+  "inspired_by": ["audit-durability", "fflush-vs-buffered"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "write_audit_record.c",
+      "start_line": 13,
+      "end_line": 17,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "write_audit_record adds an fflush call that the other two writers omit. The flush is load-bearing for audit-trail durability — without it, the most recent records can be lost on power loss, defeating the audit guarantee. An agent that normalises onto a shared writer will drop the flush unless warned."
+    }
+  ]
+}

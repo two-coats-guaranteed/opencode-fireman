@@ -42,12 +42,16 @@ export function parseFunctions(
   const visit = (node: ts.Node): void => {
     const fn = asFunctionLike(node);
     if (fn) {
+      const start = sf.getLineAndCharacterOfPosition(fn.node.getStart(sf));
+      const end = sf.getLineAndCharacterOfPosition(fn.node.getEnd());
       out.push({
         id: `${sourceLabel}::${fn.name}`,
         name: fn.name,
         source: sourceLabel,
         tree: buildFunctionTree(fn.node),
         sourceText: fn.node.getText(sf),
+        startLine: start.line + 1,
+        endLine: end.line + 1,
       });
     }
     ts.forEachChild(node, visit);

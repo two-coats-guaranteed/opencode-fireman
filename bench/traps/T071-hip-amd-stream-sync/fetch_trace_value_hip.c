@@ -1,0 +1,10 @@
+#include <stddef.h>
+#include <string.h>
+
+typedef void* hipStream_t;
+extern void cpu_copy_trace(void*, const void*, size_t);
+
+float fetch_trace_value_hip(hipStream_t stream, float* d_out, float* h_out, size_t n) {
+    cpu_copy_trace(h_out, d_out, n * sizeof(float));
+    return h_out[0];
+}

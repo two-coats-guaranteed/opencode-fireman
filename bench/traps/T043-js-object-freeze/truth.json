@@ -1,0 +1,19 @@
+{
+  "case_id": "T043",
+  "description": "loadFeatureFlags returns a frozen object so callers can't mutate the shared table; loadRuntimeMetrics and loadTracingTable return mutable per-call snapshots.",
+  "category": "sibling-divergence",
+  "inspired_by": ["shared-mutable-state", "object-freeze-invariant"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "load-feature-flags.js",
+      "start_line": 15,
+      "end_line": 22,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "loadFeatureFlags wraps the return value in Object.freeze; the other two loaders return mutable objects. The freeze is load-bearing: the feature-flag table is process-wide shared state and any consumer mutating it silently re-routes traffic for every other consumer. Unifying onto a shared loader that drops the freeze breaks the invariant."
+    }
+  ]
+}

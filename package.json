@@ -1,6 +1,6 @@
 {
   "name": "opencode-fireman",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Lightweight OpenCode plugin that warns agents about structurally asymmetric code regions before refactoring",
   "type": "module",
   "main": "./dist/index.js",
@@ -37,7 +37,11 @@
     "test": "bun run typecheck && bun run bench",
     "pack:check": "bun run build && bun pm pack --dry-run",
     "prepublishOnly": "bun run typecheck && bun run bench && bun run build && bun run smoke",
-    "llm-resolve": "bun src/similarity/llm-resolve-test.ts"
+    "llm-resolve": "bun src/similarity/llm-resolve-test.ts",
+    "plugin-smoke": "bun src/plugin-smoke.ts",
+    "metrics": "bun src/similarity/metric-comparison.ts",
+    "metric-sweep": "bun src/similarity/metric-sweep.ts",
+    "plugin-compat": "bun src/plugin-compat-test.ts"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "*"
@@ -50,6 +54,7 @@
   "devDependencies": {
     "@opencode-ai/plugin": "*",
     "@types/node": "^22.0.0",
+    "tree-sitter-php": "^0.24.2",
     "typescript": "^5.7.0"
   },
   "engines": {

@@ -1,0 +1,10 @@
+{
+  "case_id": "C029",
+  "description": "Three collectors of product IDs. A and B call Array.from(iter, mapper); C uses [...iter].map(mapper). Identical observable behaviour for any well-formed iterable.",
+  "category": "sibling-divergence",
+  "inspired_by": ["array-from-vs-spread"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

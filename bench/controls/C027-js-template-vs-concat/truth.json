@@ -1,0 +1,10 @@
+{
+  "case_id": "C027",
+  "description": "buildErrorLabelC uses '+' concatenation; buildErrorLabelA and buildErrorLabelB use template literals. The output string is identical.",
+  "category": "sibling-divergence",
+  "inspired_by": ["string-concat-vs-template-literal"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

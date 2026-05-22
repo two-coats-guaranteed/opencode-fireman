@@ -1,0 +1,19 @@
+{
+  "case_id": "T032",
+  "description": "fetchBillingCycle retries the billing-service call with exponential backoff; fetchStatusBadge and fetchOrgTier make a single call and let any failure propagate.",
+  "category": "sibling-divergence",
+  "inspired_by": ["transient-failure-retry", "exponential-backoff"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "fetch-billing-cycle.ts",
+      "start_line": 16,
+      "end_line": 25,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "fetchBillingCycle wraps the service call in a retry-with-backoff loop that fetchStatusBadge and fetchOrgTier lack. The loop is load-bearing: this path is on the invoice-issuance critical path where transient failures translate directly to revenue leakage. An agent that normalises the three onto a shared helper will drop the retry loop unless warned."
+    }
+  ]
+}

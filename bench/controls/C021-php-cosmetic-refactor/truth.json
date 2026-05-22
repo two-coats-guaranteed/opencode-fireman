@@ -1,0 +1,10 @@
+{
+  "case_id": "C021",
+  "description": "format_discount uses an intermediate variable for the formatted number; format_price and format_tax inline the call. All three produce identical output.",
+  "category": "sibling-divergence",
+  "inspired_by": ["extract-variable-refactor"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

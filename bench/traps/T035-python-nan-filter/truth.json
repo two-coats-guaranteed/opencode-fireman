@@ -1,0 +1,19 @@
+{
+  "case_id": "T035",
+  "description": "compute_average_latency filters NaN values before averaging; compute_average_size and compute_average_count sum the input directly.",
+  "category": "sibling-divergence",
+  "inspired_by": ["nan-propagation", "slo-data-quality"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "compute_average_latency.py",
+      "start_line": 14,
+      "end_line": 18,
+      "category": "sibling-divergence",
+      "severity": "high",
+      "rationale": "compute_average_latency adds a list-comprehension filter for NaN values that the other two averagers omit. The filter is load-bearing: latency samples can legitimately be NaN (timed-out probes), and sum() over any list containing NaN yields NaN, poisoning downstream SLO dashboards. An agent that unifies onto a shared average() will drop the filter unless warned."
+    }
+  ]
+}

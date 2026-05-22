@@ -1,0 +1,10 @@
+{
+  "case_id": "C025",
+  "description": "build_archive_body has an explicit std::move on the return value; build_response_body and build_payload_body return without move. Under C++17 NRVO/implicit-move rules these produce identical object code.",
+  "category": "sibling-divergence",
+  "inspired_by": ["pessimising-move", "nrvo"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

@@ -1,0 +1,10 @@
+{
+  "case_id": "C028",
+  "description": "renderCardC uses direct property access; renderCardA and renderCardB destructure first. Identical behaviour for plain objects.",
+  "category": "sibling-divergence",
+  "inspired_by": ["destructuring-vs-property-access"],
+  "is_control": true,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": []
+}

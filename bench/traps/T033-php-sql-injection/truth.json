@@ -1,0 +1,19 @@
+{
+  "case_id": "T033",
+  "description": "lookup_user_by_email uses a prepared statement with parameter binding; lookup_session_by_uuid and lookup_tenant_by_slug build the SQL via string concatenation.",
+  "category": "sibling-divergence",
+  "inspired_by": ["cwe-89-sql-injection", "pdo-prepared-statement"],
+  "is_control": false,
+  "tier": "frontier",
+  "detector_layer": "structural",
+  "findings": [
+    {
+      "file": "lookup_user_by_email.php",
+      "start_line": 14,
+      "end_line": 20,
+      "category": "sibling-divergence",
+      "severity": "critical",
+      "rationale": "lookup_user_by_email uses prepare()+execute() with bound parameters while the other two lookups string-concatenate input into the SQL query. Unifying onto a single concatenated helper re-introduces a SQL-injection vector on the login flow."
+    }
+  ]
+}
