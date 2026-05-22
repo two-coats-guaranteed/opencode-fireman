@@ -1,5 +1,10 @@
 # opencode-fireman
 
+
+[![npm](https://img.shields.io/npm/v/opencode-fireman.svg)](https://www.npmjs.com/package/opencode-fireman)
+[![CI](https://github.com/two-coats-guaranteed/opencode-fireman/actions/workflows/ci.yml/badge.svg)](https://github.com/two-coats-guaranteed/opencode-fireman/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 > An [OpenCode](https://opencode.ai/) plugin that warns your agent before it
 > "simplifies" code that was written that way on purpose.
 
