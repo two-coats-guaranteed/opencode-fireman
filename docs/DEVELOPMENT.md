@@ -101,10 +101,11 @@ for the full contract (47 checks, 9 guarantees C1–C9).
 | sim | `bun run sim` | similarity engine | MinHash, shingle, Jaccard internals |
 | bench | `bun run bench` | G5–G8 | Recall/precision on 105-case corpus |
 | characterize | `bun run characterize` | 11 claims | Characterisation logic correctness |
-| plugin-smoke | `bun run plugin-smoke` | 138 checks | End-to-end analyzer on all bench cases + unsupported-language safety (12 languages) + edge cases |
+| plugin-smoke | `bun run plugin-smoke` | 142 checks | End-to-end analyzer on all bench cases + unsupported-language safety (12 languages) + edge cases |
 | plugin-compat | `bun run plugin-compat` | 47 checks | Plugin-citizen behaviour: hook surface, output-shape robustness, multi-plugin coexistence |
 | build | `bun run build` | compiles | tsc → dist/ |
 | smoke | `bun run smoke` | integration | Built dist/ catches T001 |
+| consumer-test | `bun run consumer-test` | packaging | Packs the tarball into a fresh throwaway project, verifies exports resolve and `analyze()` works on a real trap. Catches `dependencies` vs `devDependencies` mistakes, missing files in `package.json`'s `files`, broken `exports` map, and ESM resolution failures. |
 | metrics | `bun run metrics` | comparison | Empirical metric comparison (Jaccard vs cosine vs SimHash vs asymmetric vs Dice) |
 | metric-sweep | `bun run metric-sweep` | sweep | Threshold sweep + Jaccard-floor case analysis |
 
@@ -115,7 +116,7 @@ typecheck:      0 errors
 sim:            All similarity-engine checks passed
 bench:          G5 100% · G6 0.00 · G7 40.0% · G8 0.10 — all PASS
 characterize:   11/11 claims pass
-plugin-smoke:   138 / 138 pass
+plugin-smoke:   142 / 142 pass
 plugin-compat:  47 / 47 pass
 build:          OK
 smoke:          OK
@@ -184,7 +185,7 @@ opencode-fireman/
 │   ├── compat-shim.ts         Compat-shim import detector
 │   ├── detector.ts            Legacy v0.1 regex detector (kept for core compat)
 │   ├── types.ts               Finding type
-│   ├── plugin-smoke.ts        End-to-end test (138 checks)
+│   ├── plugin-smoke.ts        End-to-end test (142 checks)
 │   ├── plugin-compat-test.ts  Plugin compatibility test (47 checks)
 │   └── similarity/
 │       ├── index.ts            buildUnits, jaccard, findTwinPairs, FunctionUnit

@@ -1,10 +1,8 @@
 # Fireman-Bench
 
-The corpus that gates `opencode-fireman`'s detection guarantees. The
-plugin is named after Twin Peaks' Fireman — the oracle who shows up to
-deliver short, cryptic-but-correct warnings about hidden truth.
-Fireman-Bench is the corpus of cases that decide whether his warnings
-are actually load-bearing.
+The corpus that gates `opencode-fireman`'s detection guarantees.
+Fireman-Bench is the corpus of cases that decide whether the plugin's
+warnings are actually load-bearing.
 
 **This corpus is the spec.** Fireman's heuristics are tuned and gated
 against the cases here.

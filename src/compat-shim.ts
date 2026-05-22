@@ -17,8 +17,14 @@
  * it scrolls to the function body.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import type { Finding } from "./types.ts";
+
+// Hard cap consistent with structural-analyzer.ts. Files above this size
+// are usually generated/vendored/minified and not what Fireman should
+// be analysing — skipping them costs no real recall and prevents
+// pathological reads.
+const MAX_FILE_BYTES = 1024 * 1024;
 
 export interface CompatShimFinding extends Finding {
   detector: "compat-shim";
@@ -51,6 +57,7 @@ export function detectCompatShimImports(
 ): CompatShimFinding[] {
   let text: string;
   try {
+    if (statSync(filePath).size > MAX_FILE_BYTES) return [];
     text = readFileSync(filePath, "utf8");
   } catch {
     return [];

@@ -564,6 +564,48 @@ console.log(
   `  note  misnamed Ruby-in-.py: ${misnamedFindings.length} finding(s) (compat-shim regex doesn't language-gate within a supported extension; the path "legacy/auth" looks legitimate)`,
 );
 
+// (7) Dotless filename — e.g. "Makefile", "Dockerfile". The previous
+// implementation used `path.split(".").pop()` which returned the entire
+// filename for dotless files, then matched it against SUPPORTED_EXTS.
+// A file literally named "ts" or "py" would have leaked through. The
+// fix uses `extname` which correctly returns "" for dotless paths.
+writeFileSync(pjoin(tmpEdge, "Makefile"), `function legacy_auth() { return 1; }`);
+check(
+  "dotless filename (Makefile): zero findings",
+  (await analyzeFile(pjoin(tmpEdge, "Makefile"))).length === 0,
+);
+writeFileSync(pjoin(tmpEdge, "ts"), `function legacy_auth() { return 1; }`);
+check(
+  'pathological dotless filename literally named "ts": zero findings',
+  (await analyzeFile(pjoin(tmpEdge, "ts"))).length === 0,
+);
+
+// (8) Hidden file with no extension — e.g. ".bashrc", ".env". Should be
+// silently skipped, never analysed.
+writeFileSync(
+  pjoin(tmpEdge, ".bashrc"),
+  `# bash config\nexport API_KEY="legacy/v1/key"`,
+);
+check(
+  'hidden file with no extension (".bashrc"): zero findings',
+  (await analyzeFile(pjoin(tmpEdge, ".bashrc"))).length === 0,
+);
+
+// (9) Oversized file — the structural analyzer caps reads at MAX_FILE_BYTES
+// (1 MiB). Files larger than this skip analysis entirely. This is a
+// defence-in-depth measure: huge files are usually generated/vendored
+// and shouldn't be analysed anyway.
+const hugePath = pjoin(tmpEdge, "huge.ts");
+// 1.5 MiB of syntactically valid TS — a single string literal works.
+const huge =
+  `export const LEGACY_BLOB = "${"x".repeat(1_500_000)}";\n` +
+  `export function foo() { return LEGACY_BLOB.length; }\n`;
+writeFileSync(hugePath, huge);
+check(
+  "oversize file (>1 MiB): skipped, zero findings",
+  (await analyzeFile(hugePath)).length === 0,
+);
+
 console.log();
 console.log("─".repeat(60));
 console.log(`Total: ${pass} passed, ${fail} failed`);

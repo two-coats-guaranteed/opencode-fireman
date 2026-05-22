@@ -53,9 +53,7 @@
   },
   "devDependencies": {
     "@opencode-ai/plugin": "*",
-    "@types/node": "^22.0.0",
-    "tree-sitter-php": "^0.24.2",
-    "typescript": "^5.7.0"
+    "@types/node": "^22.0.0"
   },
   "engines": {
     "bun": ">=1.1.0"
@@ -80,8 +78,10 @@
     "tree-sitter-c": "^0.24.1",
     "tree-sitter-cpp": "^0.23.4",
     "tree-sitter-java": "^0.23.5",
+    "tree-sitter-php": "^0.24.2",
     "tree-sitter-python": "^0.25.0",
     "tree-sitter-scala": "^0.24.0",
+    "typescript": "^5.7.0",
     "web-tree-sitter": "^0.26.8"
   }
 }

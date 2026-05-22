@@ -24,6 +24,7 @@
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
+import { basename, extname } from "node:path";
 import {
   analyzeFile,
   warmup,
@@ -65,17 +66,17 @@ function tagFor(f: Finding): string {
 
 function buildWarning(filePath: string, findings: Finding[]): string {
   const shown = findings.slice(0, MAX_FINDINGS_IN_WARNING);
-  const basename = filePath.split("/").pop() ?? filePath;
+  const basename = basenameOf(filePath);
   const lines = shown.map(
     (f) =>
       `- ${basename}:${f.start_line}-${f.end_line} ` +
       `[${tagFor(f)}]: ${f.rationale}`,
   );
-  const moreNote =
-    findings.length > MAX_FINDINGS_IN_WARNING
-      ? `\n  (… ${findings.length - MAX_FINDINGS_IN_WARNING} more findings suppressed)`
-      : "";
-  return [
+  // Assemble piecewise so the "(... more suppressed)" footer only appears
+  // when there's actually anything to suppress. The leading empty string
+  // is intentional: `join("\n")` then produces a leading "\n" that
+  // separates the warning from the preceding file content.
+  const parts: string[] = [
     "",
     "<fireman>",
     "⚠ Fireman: this file contains region(s) whose meaning depends on " +
@@ -83,9 +84,14 @@ function buildWarning(filePath: string, findings: Finding[]): string {
       "asymmetry, or imports from a compatibility path). The signals may " +
       "encode an invariant — verify before editing:",
     ...lines,
-    moreNote,
-    "</fireman>",
-  ].filter((l) => l.length > 0 || true).join("\n");
+  ];
+  if (findings.length > MAX_FINDINGS_IN_WARNING) {
+    parts.push(
+      `  (… ${findings.length - MAX_FINDINGS_IN_WARNING} more findings suppressed)`,
+    );
+  }
+  parts.push("</fireman>");
+  return parts.join("\n");
 }
 
 /** Try to append `warning` to whichever string field the output exposes. */
@@ -103,7 +109,16 @@ function tryAppendToOutput(output: unknown, warning: string): boolean {
 }
 
 function extFromPath(filePath: string): string {
-  return filePath.split(".").pop()?.toLowerCase() ?? "";
+  // `extname` correctly handles dotless filenames (returns ""), hidden
+  // files (".bashrc" → ""), and Windows paths. Strip the leading dot
+  // and lowercase for the SUPPORTED_EXTS lookup.
+  const ext = extname(filePath);
+  return ext.startsWith(".") ? ext.slice(1).toLowerCase() : "";
+}
+
+/** Cross-platform basename — `node:path` handles both `/` and `\`. */
+function basenameOf(filePath: string): string {
+  return basename(filePath) || filePath;
 }
 
 export const Fireman: Plugin = async ({ client }) => {

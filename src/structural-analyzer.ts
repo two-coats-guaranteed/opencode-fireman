@@ -15,7 +15,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { allTwinFamilies, characterizeFamily } from "./similarity/characterize.ts";
 import { buildUnits, type FunctionUnit } from "./similarity/index.ts";
 import { detectCompatShimImports, type CompatShimFinding } from "./compat-shim.ts";
@@ -43,7 +43,12 @@ const LANGS: readonly LangSpec[] = [
 ];
 
 function langOf(filePath: string): LangSpec | null {
-  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
+  // Use `extname` so dotless filenames like "Makefile" yield "" (no match)
+  // rather than the whole filename. `extname("Makefile")` is "" — correct.
+  // `extname("foo.TS")` is ".TS" — strip the dot and lowercase to "ts".
+  const raw = extname(filePath);
+  const ext = raw.startsWith(".") ? raw.slice(1).toLowerCase() : "";
+  if (!ext) return null;
   return LANGS.find((l) => l.exts.includes(ext)) ?? null;
 }
 
@@ -85,6 +90,13 @@ export function clearCache(): void {
 // File loading with caching
 // ---------------------------------------------------------------------------
 
+// Hard cap on source-file size we'll try to parse. Files larger than
+// this are skipped (return [] units). 1 MiB is comfortably above any
+// hand-written source file in this corpus and well below memory-pressure
+// territory. Files larger than this are almost always generated, vendored,
+// or minified — none of which Fireman should be analysing anyway.
+const MAX_FILE_BYTES = 1024 * 1024;
+
 async function loadFileUnits(filePath: string): Promise<FunctionUnit[]> {
   let mtimeMs: number;
   let text: string;
@@ -93,6 +105,7 @@ async function loadFileUnits(filePath: string): Promise<FunctionUnit[]> {
     mtimeMs = st.mtimeMs;
     const cached = cacheGet(filePath, mtimeMs);
     if (cached) return cached;
+    if (st.size > MAX_FILE_BYTES) return [];
     text = readFileSync(filePath, "utf8");
   } catch {
     return [];
@@ -129,8 +142,9 @@ function listSiblings(filePath: string, lang: LangSpec): string[] {
   const matches: string[] = [];
   for (const name of names) {
     if (name === targetBase) continue;
-    const ext = name.split(".").pop()?.toLowerCase() ?? "";
-    if (!lang.exts.includes(ext)) continue;
+    const raw = extname(name);
+    const ext = raw.startsWith(".") ? raw.slice(1).toLowerCase() : "";
+    if (!ext || !lang.exts.includes(ext)) continue;
     matches.push(join(dir, name));
     if (matches.length >= MAX_SIBLINGS) break;
   }
@@ -181,6 +195,12 @@ const SKIP_DIRS: ReadonlySet<string> = new Set([
 
 const MAX_CROSS_FILE_SIBLINGS = 30;
 const MAX_PACKAGE_WALK_UP = 12;
+// Downward BFS depth from the package root. A typical project nests
+// 4–6 levels; 8 covers >99% of real layouts. In huge monorepos the
+// MAX_CROSS_FILE_SIBLINGS cap may not bite when there are zero
+// matching files, so this depth limit bounds worst-case latency on
+// the cold path.
+const MAX_CROSS_FILE_DEPTH = 8;
 
 /**
  * Walk up from the file's directory looking for a package marker.
@@ -220,13 +240,15 @@ function listCrossFileSiblings(
   const found: string[] = [];
 
   // BFS from the package root. Skip the directory the target lives in
-  // — those siblings are already covered by listSiblings.
+  // — those siblings are already covered by listSiblings. Each queue
+  // entry tracks its depth from the root so we can stop at
+  // MAX_CROSS_FILE_DEPTH and bound worst-case latency on cold reads.
   const targetDir = dirname(filePath);
-  const queue: string[] = [root];
+  const queue: Array<{ dir: string; depth: number }> = [{ dir: root, depth: 0 }];
   const visited = new Set<string>();
 
   while (queue.length > 0 && found.length < MAX_CROSS_FILE_SIBLINGS) {
-    const dir = queue.shift()!;
+    const { dir, depth } = queue.shift()!;
     if (visited.has(dir)) continue;
     visited.add(dir);
 
@@ -247,15 +269,23 @@ function listCrossFileSiblings(
         continue;
       }
       if (isDir) {
-        queue.push(full);
+        if (depth + 1 <= MAX_CROSS_FILE_DEPTH) {
+          queue.push({ dir: full, depth: depth + 1 });
+        }
         continue;
       }
       // Same basename, same language, not the target itself, and not in
       // the target's directory (already handled by listSiblings).
+      // The `lang.exts` check is technically redundant when name===targetBase
+      // (since the target's extension is already in lang.exts) but is kept
+      // as a defence against logic drift.
+      const rawExt = extname(name);
+      const ext = rawExt.startsWith(".") ? rawExt.slice(1).toLowerCase() : "";
       if (
         name === targetBase &&
         dir !== targetDir &&
-        lang.exts.includes(name.split(".").pop()?.toLowerCase() ?? "")
+        ext !== "" &&
+        lang.exts.includes(ext)
       ) {
         found.push(full);
         if (found.length >= MAX_CROSS_FILE_SIBLINGS) break;
