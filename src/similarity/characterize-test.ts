@@ -315,7 +315,7 @@ for (const id of ["T030", "T034", "T035", "T038"]) {
     `got ${v(id)}`,
   );
 }
-// Cases expected to escalate (routed to LLM in production; silent in v0.2)
+// Cases expected to escalate (routed to LLM in production; silent in v0.0.1)
 for (const id of ["T031", "T032", "T033", "T036", "T039"]) {
   check(
     `${id} routed (escalate verdict — LLM tier, not silent miss)`,

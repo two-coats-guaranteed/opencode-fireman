@@ -1,5 +1,5 @@
 /**
- * Fireman v0.2 structural analyzer.
+ * Fireman structural analyzer.
  *
  * The plugin entrypoint hands a file path to `analyzeStructural`.
  * It:

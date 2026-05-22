@@ -4,46 +4,122 @@ Internals, guarantees, and contributor workflow for `opencode-fireman`.
 For the user-facing overview see the [README](../README.md); for the test
 corpus see [bench/README.md](../bench/README.md).
 
-## How it works (v0.1)
+## How it works (v0.0.1)
 
-When the agent reads a `.ts` / `.tsx` file, Fireman:
+When the agent reads a source file in a supported language (TypeScript,
+JavaScript, Python, Java, C, C++, Scala, PHP), Fireman runs a two-stage
+analysis pipeline:
 
-1. Parses every `export function` in the file.
-2. Parses every `export function` in the file's directory siblings.
-3. For each function in the read file, finds structurally similar
-   siblings (Jaccard ≥ 0.4 on identifier sets, comments stripped).
-4. If the target function contains a sort call (`.sort(` or the
-   immutable `.toSorted(`, ignoring occurrences inside comments) and
-   **none** of its similar siblings do, it appends a compact warning to
-   the read tool's output.
+### Stage 1: Structural asymmetry detection
 
-## What it explicitly does NOT do (yet)
+1. Parses all functions in the file using a language-specific adapter —
+   the TypeScript compiler API for `.ts`/`.js`, or
+   [web-tree-sitter](https://github.com/tree-sitter/tree-sitter)
+   grammars for all other languages.
+2. Builds a normalised AST (`NormNode`) for each function, then
+   computes structural shingles (subtree patterns + trigrams of kind
+   sequences).
+3. Finds **sibling functions** — directory siblings (cap 20 files) and
+   same-basename cross-file twins within the nearest package root
+   (cap 30 files, BFS-bounded).
+4. Forms **twin families** via MinHash (128 hashes, 32-band LSH) with a
+   Jaccard threshold of 0.40.
+5. For each family, identifies the **divergent member** (minority
+   structKey group, size-tiebreaker), computes the tree diff, classifies
+   the shape (extra-call, extra-branch, label-divergence, etc.), and
+   runs a **six-check critical-path analysis** (return-value flow,
+   exception flow, conditional flow, state mutation, resource lifecycle,
+   output flow).
+6. Produces a **verdict** — `flag` (surfaces to the agent), `escalate`
+   (logged but not surfaced in v0.0.1 — these are the cases that would
+   benefit from LLM judgement), or `ignore`.
 
-- **One detector only.** Sibling-divergence-by-sort. The architecture
-  supports more, but v0.1 ships one.
-- **One language.** TypeScript / TSX.
-- **One directory hop.** No cross-module analysis, no imports graph.
-- **No history.** No git churn, no revert mining, no caching.
-- **No ML.** Pure heuristics + regex AST extraction.
+### Stage 2: Compat-shim import detection
 
-Every new detector arrives through the same loop: a new trap case in the
-bench + a matched control + the detector code that catches one without
-firing on the other.
+Scans the raw file text for import-like lines (`import`, `from`,
+`require`, `require_once`, `#include`, `use`) whose paths contain
+marker segments matching `/(?:^|[/\\.])(legacy|compat|compatibility|
+polyfill|deprecated|shim|backport|v\d+)(?:[/\\.]|$)/i`. Path-segment
+matching prevents false positives on binding names
+(`import { compatibility } from "..."` does not fire).
+
+### Output
+
+Both stages produce `Finding[]` objects. The plugin filters to
+`verdict === "flag"` findings (or all compat-shim findings), builds a
+compact `<fireman>` warning block (max 3 findings), and appends it to
+the `read` tool's output string via `tryAppendToOutput`.
+
+## Language adapters
+
+| Adapter | Languages | Engine | Notes |
+|---------|-----------|--------|-------|
+| ts-adapter | TypeScript, TSX, JavaScript, JSX, MJS, CJS | TS compiler API | Populates `sourceText`, `startLine`, `endLine` |
+| python-adapter | Python | tree-sitter-python | |
+| java-adapter | Java | tree-sitter-java | |
+| c-adapter | C | tree-sitter-c | |
+| cpp-adapter | C++ | tree-sitter-cpp | Handles `reference_declarator` / `pointer_declarator` chains; SYCL `.cpp` files use this adapter |
+| scala-adapter | Scala | tree-sitter-scala | |
+| php-adapter | PHP | tree-sitter-php | |
+| tree-sitter-base | (shared) | web-tree-sitter | Generic wrapper used by all tree-sitter adapters |
 
 ## Guarantees
 
-Fireman makes seven falsifiable claims. Six are testable by the bench in
-this repo. The seventh (G7) lives in the separate `fireman-tasks` repo.
+Fireman makes four design guarantees verified by mechanical inspection.
+The bench gates four recall/precision metrics.
 
-| ID | Claim | How tested | Status |
-|----|-------|-----------|--------|
-| G1 | Never writes to disk | Source review; only `output` objects are mutated | mechanical |
-| G2 | Never aborts a tool call | No `throw` reachable from any hook handler | mechanical |
-| G3 | ≤ 400 ms per analysis | Detector wrapped in `Promise.race` with a 400 ms timeout in `src/index.ts` | mechanical |
-| G4 | ≤ 80 tokens per warning | Fixed template, max 3 findings, no LLM in the loop | mechanical |
-| G5 | ≥ 80% recall on bench traps | `bun run bench`; gates CI | **7/7 core traps** |
-| G6 | ≤ 10% false-positive rate on bench controls | `bun run bench`; gates CI | **0 FP / 14 core controls** |
-| G7 | Measurable behavioral lift on agent refactor tasks | `fireman-tasks` repo (harness + 3-task seed; needs an API key to run) | not yet measured |
+### Design guarantees
+
+| ID | Claim | How verified |
+|----|-------|-------------|
+| G1 | Never writes to disk | Source review; only `output` objects are mutated |
+| G2 | Never aborts a tool call | No `throw` reachable from any hook handler; `withTimeout` absorbs both promise rejection and timeout |
+| G3 | ≤ 3000 ms per analysis | Detector wrapped in `Promise.race` with `ANALYSIS_TIMEOUT_MS = 3000` in `src/index.ts` |
+| G4 | Max 3 findings per warning | `MAX_FINDINGS_IN_WARNING = 3`; fixed template |
+
+### Bench metrics
+
+| ID | Claim | Scope | Current |
+|----|-------|-------|---------|
+| G5 | ≥ 80% recall on core traps | 7 core traps | 100.0% |
+| G6 | ≤ 10% FP rate on core controls | 14 core controls | 0.00 |
+| G7 | ≥ 40% recall on frontier traps | 68 frontier traps | 40.0% |
+| G8 | ≤ 15% FP rate on frontier controls | 16 frontier controls | 0.10 |
+
+## Plugin compatibility
+
+Fireman registers exactly one hook (`tool.execute.after` on `read`),
+no tools, no slash commands, no global state. Tested alongside caveman
+and oh-my-opencode — see [PLUGIN_COMPATIBILITY.md](../PLUGIN_COMPATIBILITY.md)
+for the full contract (47 checks, 9 guarantees C1–C9).
+
+## Test suites
+
+| Suite | Command | Checks | What it tests |
+|-------|---------|--------|---------------|
+| typecheck | `bun run typecheck` | 0 errors | Strict TypeScript compilation |
+| sim | `bun run sim` | similarity engine | MinHash, shingle, Jaccard internals |
+| bench | `bun run bench` | G5–G8 | Recall/precision on 105-case corpus |
+| characterize | `bun run characterize` | 11 claims | Characterisation logic correctness |
+| plugin-smoke | `bun run plugin-smoke` | 138 checks | End-to-end analyzer on all bench cases + unsupported-language safety (12 languages) + edge cases |
+| plugin-compat | `bun run plugin-compat` | 47 checks | Plugin-citizen behaviour: hook surface, output-shape robustness, multi-plugin coexistence |
+| build | `bun run build` | compiles | tsc → dist/ |
+| smoke | `bun run smoke` | integration | Built dist/ catches T001 |
+| metrics | `bun run metrics` | comparison | Empirical metric comparison (Jaccard vs cosine vs SimHash vs asymmetric vs Dice) |
+| metric-sweep | `bun run metric-sweep` | sweep | Threshold sweep + Jaccard-floor case analysis |
+
+Expected output on a clean checkout:
+
+```
+typecheck:      0 errors
+sim:            All similarity-engine checks passed
+bench:          G5 100% · G6 0.00 · G7 40.0% · G8 0.10 — all PASS
+characterize:   11/11 claims pass
+plugin-smoke:   138 / 138 pass
+plugin-compat:  47 / 47 pass
+build:          OK
+smoke:          OK
+```
 
 ## Known caveats
 
@@ -52,54 +128,39 @@ output shape for `tool.execute.after` on `read`. `src/index.ts` mutates
 the first string-valued field it finds among `output`, `result`, `text`,
 `content` — and falls back to `client.app.log()` if none are present. If
 warnings aren't surfacing, run OpenCode with logging enabled and check
-for `fireman-finding-not-injected` entries. The fix is likely a one-line
-key change.
+for `fireman-finding-not-injected` entries.
 
-**Regex AST extraction.** `src/detector.ts` uses a regex + brace-match
-for function discovery. It is intentionally simple for v0.1 and will be
-replaced with [web-tree-sitter](https://github.com/tree-sitter/tree-sitter)
-when the second detector category lands. Functions defined as
-`const fn = () => { ... }` are not detected; only `export function
-name(...)` forms are. This matches the bench corpus today.
+**Constructor-side-effect family.** 14 bench cases (across CUDA, HIP,
+SYCL, Ascend, SNPE, C++ locks, and C hardware MMIO) share the same
+detection gap: a CALL whose return value is discarded but whose effect
+is on external state (lock, hardware register, GPU stream, accelerator
+context). The data-flow tracer cannot follow the effect because there's
+no value to chase. These all escalate rather than flag. Fix: treat any
+CALL with discarded return as on-critical-path by default.
+
+**Jaccard floor.** 9 bench cases have a large guard block that doubles
+the divergent function's size, dropping its Jaccard similarity to
+consensus siblings below the 0.40 threshold. Asymmetric overlap rescues
+7 of 9 at the family-formation step, but `characterizeFamily` downstream
+still blocks them. The metric is not the bottleneck — the feature
+representation and characterisation logic are.
+
+**Legacy v0.1 detector.** `src/detector.ts` (the original regex-based
+sort-only detector) is kept for backward compatibility with the 7 core
+bench traps. The v0.0.1 plugin does not use it; all analysis goes
+through `src/structural-analyzer.ts` → `src/similarity/`.
 
 ## Working on it
 
 ```bash
-bun install               # dev deps incl. typescript and @types/node
+bun install               # dev deps incl. typescript, tree-sitter grammars, @types/node
 bun run typecheck         # strict tsc, no emit
-bun run bench             # runs Fireman-Bench-v1; gates G5/G6, exit 1 on fail
+bun run bench             # runs Fireman-Bench; gates G5–G8
+bun run plugin-smoke      # end-to-end: all bench cases + unsupported-language safety
+bun run plugin-compat     # plugin-citizen behaviour: 47 checks
 bun run build             # emits dist/ via tsc -p tsconfig.build.json
 bun run pack:check        # dry-run npm pack to inspect tarball contents
 ```
-
-Expected `bun run bench` output on a clean checkout:
-
-```
-Fireman-Bench-v1 Results
-=======================
-Core traps:        7
-Core controls:     14
-Recall (G5):       100.0%   target >= 80%   PASS
-FP / control (G6): 0.00   target <= 0.1   PASS
-
-Per-case (core):
-  PASS  T001 .. T013     all 7 traps detected
-  OK    C001 .. C015     all 14 controls clean
-
-Frontier (known limits, not gated): 14 case(s) — 2 false positive(s), 12 missed trap(s)
-  ~~  T006 .. T019   missed (recall ceiling — categories v0.1 can't see yet)
-  ~~  C007, C016     false positive (precision ceiling / residual)
-```
-
-The bench is split into two tiers. **Core** cases gate CI — G5 and G6 are
-computed over them. **Frontier** cases document known detector limits: the
-twelve frontier traps (T006–T019) are real bug classes — manual escaping,
-compatibility markers, timestamp truncation, bitmask layout, retry
-ordering, within-file divergence, null handling, locale sensitivity,
-encoding, numeric rounding, error propagation, and regex anchoring — that
-v0.1's sort-only detector cannot see, and C007/C016 are precision cases it
-false-positives on. Frontier cases are reported but do not gate. See
-[bench/README.md](../bench/README.md) for the full tier explanation.
 
 ## Build & publish
 
@@ -113,54 +174,51 @@ bun run build      # produces dist/
 bun pm pack        # produces opencode-fireman-X.Y.Z.tgz
 ```
 
-Publishing is automated via GitHub Actions
-([`.github/workflows/publish.yml`](../.github/workflows/publish.yml)):
-
-1. Bump `version` in `package.json`.
-2. Commit and tag: `git tag v0.2.0 && git push --tags`.
-3. CI runs typecheck → bench → build → `npm publish --provenance`.
-4. Requires the `NPM_TOKEN` repo secret.
-
-CI also verifies on every push / PR
-([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)): typecheck
-passes, bench passes G5 and G6, build succeeds, the **built**
-`dist/detector.js` catches T001, and `npm pack` produces a tarball with
-only `dist/`, `README.md`, `LICENSE`, and `package.json`.
-
 ## Layout
 
 ```
 opencode-fireman/
-├── src/                       Source — what gets built
-│   ├── index.ts               OpenCode plugin entrypoint (the hook)
-│   ├── detector.ts            Pure detector function — no OpenCode dep
-│   └── types.ts               Shared Finding type
-├── dist/                      Built artifacts (gitignored; published)
-├── bench/                     Test corpus & harness (not published)
+├── src/
+│   ├── index.ts               Plugin entrypoint (tool.execute.after hook)
+│   ├── structural-analyzer.ts analyzeFile, analyzeStructural, langOf, LRU cache
+│   ├── compat-shim.ts         Compat-shim import detector
+│   ├── detector.ts            Legacy v0.1 regex detector (kept for core compat)
+│   ├── types.ts               Finding type
+│   ├── plugin-smoke.ts        End-to-end test (138 checks)
+│   ├── plugin-compat-test.ts  Plugin compatibility test (47 checks)
+│   └── similarity/
+│       ├── index.ts            buildUnits, jaccard, findTwinPairs, FunctionUnit
+│       ├── normalized-ast.ts   28 NormKinds, NormFunction, NormNode
+│       ├── shingles.ts         Subtree + trigram shingle computation
+│       ├── minhash.ts          MinHash signatures (128 hashes, 32-band LSH)
+│       ├── characterize.ts     characterizeFamily, allTwinFamilies, verdict logic
+│       ├── dataflow.ts         buildFlowGraph, criticalPathAnalysis (6 checks A–F)
+│       ├── callgraph.ts        buildCallGraph, callGraphSummary
+│       ├── metrics.ts          Alternative metrics (cosine, SimHash, asymmetric, Dice)
+│       ├── metric-comparison.ts  Empirical metric comparison driver
+│       ├── metric-sweep.ts     Threshold sweep + Jaccard-floor analysis
+│       ├── ts-adapter.ts       TypeScript/JavaScript adapter (TS compiler API)
+│       ├── python-adapter.ts   Python adapter (tree-sitter)
+│       ├── java-adapter.ts     Java adapter (tree-sitter)
+│       ├── c-adapter.ts        C adapter (tree-sitter)
+│       ├── cpp-adapter.ts      C++ adapter (tree-sitter)
+│       ├── scala-adapter.ts    Scala adapter (tree-sitter)
+│       ├── php-adapter.ts      PHP adapter (tree-sitter)
+│       ├── tree-sitter-base.ts Generic tree-sitter wrapper
+│       ├── test.ts             Similarity engine unit tests
+│       ├── characterize-test.ts  Characterisation logic tests
+│       └── llm-resolve-test.ts LLM escalation tests (needs ANTHROPIC_API_KEY)
+├── bench/                     105-case test corpus (not published)
 │   ├── README.md
 │   ├── schema/
-│   ├── traps/  controls/      The 35-case corpus
-│   └── harness/run.ts         Gates G5/G6, exit 1 on fail
-├── docs/DEVELOPMENT.md         This file
-├── assets/                     README media
-├── .github/workflows/
-│   ├── ci.yml                 typecheck + bench + build + pack
-│   └── publish.yml            npm publish on v* tag
+│   ├── traps/ (75 cases)
+│   ├── controls/ (30 cases)
+│   └── harness/run.ts
+├── docs/DEVELOPMENT.md        This file
+├── PLUGIN_COMPATIBILITY.md    Plugin compatibility contract
+├── assets/                    README media
 ├── package.json
+├── bun.lock
 ├── tsconfig.json              typecheck/editor config (noEmit)
 └── tsconfig.build.json        emit config; targets dist/
 ```
-
-The detector is split from the plugin so the bench can drive it without
-OpenCode installed, and so adding detectors doesn't risk regressions in
-the hook wiring.
-
-## Roadmap
-
-- **v0.2** — replace regex extraction with web-tree-sitter; add the
-  `manual-escaping` detector and at least 5 trap/control pairs.
-- **v0.3** — add `compatibility-marker`, `timestamp-truncation`;
-  Fireman-Bench reaches 15+ trap/control pairs.
-- **v0.4** — first real run of `fireman-tasks` (G7). If lift is
-  measurable, ship v1.0. If not, stop building and report what we
-  learned.

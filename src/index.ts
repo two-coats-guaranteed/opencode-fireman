@@ -1,5 +1,5 @@
 /**
- * opencode-fireman plugin entrypoint (v0.2).
+ * opencode-fireman plugin entrypoint.
  *
  * Registers a `tool.execute.after` hook on the `read` tool. When the agent
  * reads a source file in a supported language (TypeScript, JavaScript,
@@ -8,10 +8,10 @@
  * compact warning to the read output so the agent sees it before
  * planning any edit.
  *
- * v0.1 used a regex sort-only detector. v0.2 uses the structural+data-flow
- * pipeline in `src/similarity/`, which catches divergences across all
- * supported languages — URL encoding, null guards, HMAC vs hash,
- * HTML escape, bounds checks, mutex guards, sort ordering, and more.
+ * The v0.1 legacy regex sort-only detector is preserved in `detector.ts`
+ * for backward compatibility with the core bench. The production plugin
+ * uses the structural+data-flow pipeline in `src/similarity/`, which
+ * catches divergences across all supported languages.
  *
  * Design constraints (the plugin's guarantees):
  *   G1  Never writes to disk. Fireman only mutates the `output` object.

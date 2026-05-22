@@ -1,5 +1,5 @@
 /**
- * End-to-end smoke test for the v0.2 structural analyzer.
+ * End-to-end smoke test for the structural analyzer.
  *
  * For each trap case, simulate the plugin: pretend the agent is reading
  * the divergent file in that case's directory. Call `analyzeStructural`
